@@ -1,0 +1,40 @@
+# Start with bindings:
+# apptainer run --bind /etc/munge:/etc/munge --bind /run/munge:/run/munge --bind /etc/slurm:/etc/slurm nextflow-insa.sif
+
+Bootstrap: docker
+From: ubuntu:22.04
+
+%post
+    apt-get update && apt-get install -y \
+        slurm-client \
+        munge \
+        curl \
+        bash \
+        openjdk-17-jre-headless \
+        libmunge2 \
+        libmunge-dev \
+        && apt-get clean
+
+    # Optional dummy munge key (only used if host isn't binding)
+    mkdir -p /etc/munge
+    dd if=/dev/urandom bs=1 count=1024 of=/etc/munge/munge.key
+    chown munge:munge /etc/munge/munge.key
+    chmod 400 /etc/munge/munge.key
+
+    # Install Nextflow via official self-install method
+    # https://www.nextflow.io/docs/stable/install.html :contentReference[oaicite:1]{index=1}
+    curl -s https://get.nextflow.io | bash
+    mv nextflow /usr/local/bin/nextflow
+    chmod +x /usr/local/bin/nextflow
+
+%environment
+    export PATH=/usr/local/bin:$PATH
+    # If you install a specific NXF_VER, export it here for reproducibility
+    # export NXF_VER=23.10.1 :contentReference[oaicite:2]{index=2}
+
+%runscript
+    exec /bin/bash "$@"
+
+%labels
+    Author Karol Desnos
+    Version ubuntu-slurm-nextflow-2.0
