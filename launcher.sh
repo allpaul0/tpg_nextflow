@@ -33,4 +33,6 @@ log "Start pipeline with nextflow"
 apptainer exec \
     --bind /etc/munge:/etc/munge --bind /run/munge:/run/munge --bind /etc/slurm:/etc/slurm containers/nextflow-insa.sif \
     nextflow run ./pipeline/main.nf \
-    -c ./configs/nextflow.config,./configs/instructions.config 
+    --projectRoot "$(pwd)" \
+    -c ./configs/nextflow.config,./configs/trainings.config \
+    "$@"

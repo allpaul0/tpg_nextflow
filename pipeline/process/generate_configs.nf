@@ -5,9 +5,8 @@ process generate_configs {
     memory = '1 GB'
     time = '1m 30s'
     
-
     input:
-    val(instruction_set)
+    val parameters
 
     output:
     path "*"
@@ -57,15 +56,9 @@ process generate_configs {
         # Save the modified JSON data back to the file
         with open(params_file_path, 'w') as json_file:
             json.dump(data, json_file, indent=4)
-        
-    parameters = {
-        'instrSetName': '${instruction_set.instrSetName}',
-        'useInstrTrig': ${instruction_set.useInstrTrig ? 'True' : 'False'},
-        'useInstrLogExp': ${instruction_set.useInstrLogExp ? 'True' : 'False'},
-        'useInstrExpensiveArithmetic': ${instruction_set.useInstrExpensiveArithmetic ? 'True' : 'False'},
-        'useInstrComparison': ${instruction_set.useInstrComparison ? 'True' : 'False'}
-    }
 
+    parameters = json.loads('''${groovy.json.JsonOutput.toJson(parameters)}''')
+        
     expe_name = experiment_name(parameters)
     expe_folder = expe_name  # Create folder directly in work directory
     
