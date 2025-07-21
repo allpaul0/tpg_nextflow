@@ -10,9 +10,9 @@ workflow {
     def ch_instruction_sets = Channel.from(params.instruction_sets)
 
     if (params.mini_config) {
-        ch_types = ch_types.take(2)
-        ch_seeds = ch_seeds.take(2)
-        ch_instruction_sets = ch_instruction_sets.take(2)
+        ch_types = ch_types.take(params.mini_config)
+        ch_seeds = ch_seeds.take(params.mini_config)
+        ch_instruction_sets = ch_instruction_sets.take(params.mini_config)
     }
 
     ch_parameters = ch_seeds

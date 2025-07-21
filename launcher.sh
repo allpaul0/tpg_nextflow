@@ -4,6 +4,9 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
 
+# Trap SIGINT and terminate Nextflow gracefully
+trap 'log "Terminating Nextflow..."; kill $(pgrep -f "nextflow"); exit 0' SIGINT
+
 # launcher.sh - Script to launch the TPG pipeline
 
 # Set the working directory to the script's location
@@ -21,11 +24,11 @@ log "Found containers: ${container_defs[*]}"
 for container in "${container_defs[@]}"; do
     sif_file="containers/${container}.sif"
     def_file="containers/${container}.def"
-    if [ ! -f "$sif_file" ]; then
+    if [ ! -f "$sif_file" ] || [ "$def_file" -nt "$sif_file" ]; then
         log "Building container: $container"
         apptainer build "$sif_file" "$def_file"
     else
-        log "Container already built: $container"
+        log "Container is up-to-date: $container"
     fi
 done
 

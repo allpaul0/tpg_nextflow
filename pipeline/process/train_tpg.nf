@@ -1,8 +1,8 @@
 process train_tpg {
     executor = 'slurm'
     memory = '10 GB'
-    cpus = 128
-    time = '125m'
+    cpus = 48
+    time = '5h 31m'
 
     input:
     path expe_folder
