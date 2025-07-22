@@ -1,6 +1,7 @@
 #!/usr/bin/env nextflow
 include { generate_configs } from "./process/generate_configs.nf"
 include { train_tpg } from "./process/train_tpg.nf"
+include { generate_code } from "./process/generate_code.nf"
 
 nextflow.enable.dsl=2
 
@@ -23,5 +24,7 @@ workflow {
 
     configs = generate_configs(ch_parameters)
 
-    train_tpg(configs)
+    trained_TPGs = train_tpg(configs)
+
+    generate_code(trained_TPGs)
 }

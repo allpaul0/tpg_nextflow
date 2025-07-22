@@ -38,4 +38,5 @@ apptainer exec \
     nextflow run ./pipeline/main.nf \
     --projectRoot "$(pwd)" \
     -c ./configs/nextflow.config,./configs/trainings.config \
+    -with-report -with-dag \
     "$@"

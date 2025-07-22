@@ -25,7 +25,7 @@ process generate_configs {
         os.makedirs(params_folder, exist_ok=True)
         out_logs_folder = expe_folder + '/outLogs/dotfiles'
         os.makedirs(out_logs_folder, exist_ok=True)
-        files_to_copy = ['AllTarget.csv', 'params.json', 'trainParams.json']
+        files_to_copy = ['AllTarget.csv', 'params.json', 'trainParams.json', 'ValidationTrajectories.txt']
         for file_name in files_to_copy:
             src_file_path = os.path.join(src_folder, file_name)
             dest_file_path = os.path.join(params_folder, file_name)
