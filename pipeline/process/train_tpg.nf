@@ -1,8 +1,8 @@
 process train_tpg {
     executor = 'slurm'
     memory = '10 GB'
-    cpus = 48
-    time = '5h 31m'
+    cpus = params.training_cores
+    time = "${params.training_time + 240} s" // Add 4 minutes for safety, as training is terminated between generations.
 
     input:
     path expe_folder

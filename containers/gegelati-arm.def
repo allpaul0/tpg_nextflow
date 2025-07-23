@@ -15,9 +15,6 @@ git clone --recurse-submodules https://github.com/gegelati/armlearn-wrapper.git
 cd armlearn-wrapper
 git checkout intEvaluation 
 
-# Modify "timeMaxTraining" in params/trainParams.json
-sed -i 's/"timeMaxTraining": 7200, \/\/2 hours/"timeMaxTraining": 19800, \/\/5h30/' params/trainParams.json
-
 # install dependencies
 yes | . scripts/dependencies_installation.sh
 
