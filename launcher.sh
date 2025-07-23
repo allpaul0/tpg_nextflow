@@ -26,7 +26,7 @@ for container in "${container_defs[@]}"; do
     def_file="containers/${container}.def"
     if [ ! -f "$sif_file" ] || [ "$def_file" -nt "$sif_file" ]; then
         log "Building container: $container"
-        apptainer build "$sif_file" "$def_file"
+        apptainer build --force "$sif_file" "$def_file"
     else
         log "Container is up-to-date: $container"
     fi
