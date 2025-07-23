@@ -2,6 +2,7 @@
 include { generate_configs } from "./process/generate_configs.nf"
 include { train_tpg } from "./process/train_tpg.nf"
 include { generate_code } from "./process/generate_code.nf"
+include { parse_results } from "./process/parse_results.nf"
 
 nextflow.enable.dsl=2
 
@@ -19,12 +20,16 @@ workflow {
     ch_parameters = ch_seeds
         .combine(ch_instruction_sets)
         .combine(ch_types)
-        .map { seed, instruction_set, type -> instruction_set + [seed: seed, type: type] }
+        .map { seed, instruction_set, type -> instruction_set + [seed: seed, instrType: type] }
         
 
     configs = generate_configs(ch_parameters)
 
     trained_TPGs = train_tpg(configs)
+
+    all_trained_TPGs = trained_TPGs.collect()
+
+    parsed_results = parse_results(all_trained_TPGs)
 
     generate_code(trained_TPGs)
 }
