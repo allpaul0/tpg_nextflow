@@ -58,5 +58,13 @@ process generate_code {
     else
         echo "Warning: \${codegen_h_file} not found, skipping header patch."
     fi
+
+    # Patch codeGenArmlearn_program.c to use the correct type for all 'double'
+    codegen_c_prog_file="${expe_folder}/outLogs/codeGen/codeGenArmlearn_program.c"
+    if [ -f "\${codegen_c_prog_file}" ]; then
+        sed -i "s/double/\${instrType}/g" "\${codegen_c_prog_file}"
+    else
+        echo "Warning: \${codegen_c_prog_file} not found, skipping program patch."
+    fi
     """
 }
