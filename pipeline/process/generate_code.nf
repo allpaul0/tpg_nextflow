@@ -35,6 +35,9 @@ process generate_code {
         # Always replace the function signature and pointer type
         sed -i "s/int bestProgram(double \\*results, int nb)/int bestProgram(\${instrType} *results, int nb)/" "\${codegen_c_file}"
 
+        # Replace double TnScores with \${instrType} TnScores
+        sed -i -E "s/double T([0-9]+)Scores/\${instrType} T\\1Scores/g" "\${codegen_c_file}"
+
         if [ "\${instrType}" = "int" ]; then
             # For int, remove isnan/-INFINITY logic and set type
             sed -i 's/double bestScore = (isnan(results\\[0\\]))? -INFINITY : results\\[0\\];/int bestScore = results[0];/' "\${codegen_c_file}"
@@ -46,6 +49,14 @@ process generate_code {
         fi
     else
         echo "Warning: \${codegen_c_file} not found, skipping type patch."
+    fi
+
+    # Patch codeGenArmlearn_program.h to use the correct type for P functions
+    codegen_h_file="${expe_folder}/outLogs/codeGen/codeGenArmlearn_program.h"
+    if [ -f "\${codegen_h_file}" ]; then
+        sed -i -E "s/double P([0-9]+)\\(\\);/\${instrType} P\\1();/g" "\${codegen_h_file}"
+    else
+        echo "Warning: \${codegen_h_file} not found, skipping header patch."
     fi
     """
 }
