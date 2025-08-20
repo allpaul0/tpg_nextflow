@@ -3,6 +3,7 @@ include { generate_configs } from "./process/generate_configs.nf"
 include { train_tpg } from "./process/train_tpg.nf"
 include { generate_code } from "./process/generate_code.nf"
 include { parse_results } from "./process/parse_results.nf"
+include { build_executables } from "./process/build_executables.nf"
 
 nextflow.enable.dsl=2
 
@@ -31,5 +32,7 @@ workflow {
 
     parsed_results = parse_results(all_trained_TPGs)
 
-    generate_code(trained_TPGs)
+    generated_codes = generate_code(trained_TPGs)
+
+    build_executables(generated_codes)
 }
