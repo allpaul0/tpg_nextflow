@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Default value
+mini_config=0
+
+# Parse optional argument --mini_config=VALUE
+for arg in "$@"; do
+    case $arg in
+        --mini-config=*)
+            mini_config="${arg#*=}"
+            shift # remove this argument from $@
+            ;;
+    esac
+done
+
+echo "Using mini_config=$mini_config"
+
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
@@ -34,8 +49,11 @@ done
 
 log "Start pipeline with nextflow"
 apptainer exec \
-    --bind /etc/munge:/etc/munge --bind /run/munge:/run/munge --bind /etc/slurm:/etc/slurm containers/nextflow-insa.sif \
+    --bind /etc/munge:/etc/munge \
+    --bind /run/munge:/run/munge \
+    --bind /etc/slurm:/etc/slurm containers/nextflow-insa.sif \
     nextflow run ./pipeline/main.nf \
+    --mini_config="$mini_config" \
     --projectRoot "$(pwd)" \
     -c ./configs/nextflow.config,./configs/trainings.config \
     -with-report -with-dag \
