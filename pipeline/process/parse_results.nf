@@ -1,6 +1,6 @@
 process parse_results {
     executor = 'slurm'
-    // container = 'gegelati-arm.sif'
+    // container = 'gegelati-armlearn.sif'
     cpus = 1
     memory = '1 GB'
     time = '1m 30s'

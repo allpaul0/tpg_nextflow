@@ -1,9 +1,9 @@
 process build_executables {
     executor = 'slurm'
-    container = 'gegelati-arm.sif'
+    container = 'gegelati-armlearn.sif'
     cpus = 1
     memory = '1 GB'
-    time = '20m 30s'
+    time = '4m 30s'
     
     input:
     path expe_folder

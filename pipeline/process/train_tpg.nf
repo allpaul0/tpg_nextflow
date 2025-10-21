@@ -12,9 +12,10 @@ process train_tpg {
 
     publishDir "${params.outdir}/training_results", mode: 'copy'
 
+    // The training is run inside the container, with the params and outLogs folders binded to the container.
     script:
     """
     echo "Training TPG model with ${expe_folder}"
-    apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-arm.sif /bin/bash -c "cd / && ./armlearn-wrapper/build/armGegelati"
+    apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-armlearn.sif /bin/bash -c "cd / && ./armlearn-wrapper/build/armGegelati"
     """
 }

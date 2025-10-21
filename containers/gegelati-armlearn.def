@@ -16,7 +16,7 @@ cd armlearn-wrapper
 git checkout intEvaluation 
 
 # install dependencies
-yes | . scripts/dependencies_installation.sh
+yes | . container/dependencies_installation.sh
 
 # build wrapper
 mkdir build && cd build && cmake .. && cmake --build .
