@@ -14,6 +14,11 @@ From: ubuntu:22.04
         libmunge2 \
         libmunge-dev \
         && apt-get clean
+    
+    apt install -y wget
+    cd /tmp
+    wget https://github.com/apptainer/apptainer/releases/download/v1.4.3/apptainer_1.4.3_amd64.deb
+    apt install -y ./apptainer_1.4.3_amd64.deb
 
     # Optional dummy munge key (only used if host isn't binding)
     mkdir -p /etc/munge

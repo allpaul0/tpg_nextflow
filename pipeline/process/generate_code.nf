@@ -1,5 +1,4 @@
 process generate_code {
-    executor = 'slurm'
     cpus = 1
     memory = '1 GB'
     time = '5m 30s'

@@ -8,7 +8,7 @@ import sys
 def copy_files(expe_folder, custom_params_path, use_local_params):
     # Copies required parameter and log files from the container (armlearn-wrapper) to the experiment folder.
     # These files are then modified to create a unique experiment configuration.
-    container_src_folder = '/armlearn-wrapper/params/' # Within apptainer
+    container_src_folder = '/armlearn-wrapper/params/' # Within gegelati-armlearn apptainer container
     params_folder = os.path.join(expe_folder, 'params')
     os.makedirs(params_folder, exist_ok=True)
     out_logs_folder = os.path.join(expe_folder, 'outLogs', 'dotfiles')
