@@ -1,0 +1,31 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%post
+
+# Update and install dependencies
+    apt-get update && apt-get install -y \
+        git \
+        cmake \
+        build-essential \
+        libssl-dev \
+        libboost-all-dev \
+        doxygen \
+        && rm -rf /var/lib/apt/lists/*
+
+echo "# Install Gegelati"
+git clone https://github.com/allpaul0/gegelati.git
+cd gegelati
+git checkout 40194ed
+
+mkdir bin
+cd bin
+cmake -DCMAKE_BUILD_TYPE=Release .. 
+make -j
+make install
+cd ../..
+
+
+# update libs
+/sbin/ldconfig -v
+echo "Installation finished"
