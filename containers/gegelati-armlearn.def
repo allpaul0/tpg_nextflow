@@ -4,7 +4,7 @@ From: ubuntu:22.04
 %post
 
 # basic setup with non interactive command to facilitate installation
-apt update && apt -y install git vim
+apt update && apt -y install git vim jq
 DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends tzdata
 
 # alias sudo to avoid issues in singularity
