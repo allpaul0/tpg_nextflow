@@ -37,7 +37,7 @@ workflow {
 
     // seeds_all_trained_TPGs = generate_seeds(trained_TPGs)
     
-    generated_codes = generate_code(trained_TPGs)
+    //generated_codes = generate_code(trained_TPGs)
 
     // build_executables(generated_codes)
 }
