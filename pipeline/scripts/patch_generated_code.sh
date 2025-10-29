@@ -32,10 +32,11 @@ if [ -f "${codegen_c_graph_file}" ]; then
     # Replace double TnScores with ${instrType} TnScores
     sed -i -E "s/double T([0-9]+)Scores/${instrType} T\\1Scores/g" "${codegen_c_graph_file}"
 
-    if [ "${instrType}" = "int" ]; then
+    # instrType int and fixedpt need special handling for bestScore and challengerScore
+    if [ "${instrType}" = "int" ] || [ "${instrType}" = "fixedpt" ]; then
         # For int, remove isnan/-INFINITY logic and set type
-        sed -i 's/double bestScore = (isnan(results\[0\]))? -INFINITY : results\[0\];/int bestScore = results[0];/' "${codegen_c_graph_file}"
-        sed -i 's/double challengerScore = (isnan(results\[i\]))? -INFINITY : results\[i\];/int challengerScore = results[i];/' "${codegen_c_graph_file}"
+        sed -i "s/double bestScore = (isnan(results\[0\]))? -INFINITY : results\[0\];/${instrType} bestScore = results[0];/" "${codegen_c_graph_file}"
+        sed -i "s/double challengerScore = (isnan(results\[i\]))? -INFINITY : results\[i\];/${instrType} challengerScore = results[i];/" "${codegen_c_graph_file}"
     else
         # For float/double, just change the type
         sed -i "s/double bestScore =/${instrType} bestScore =/" "${codegen_c_graph_file}"
@@ -48,8 +49,15 @@ fi
 # Patch CodeGenArmlearn.h to use the correct type for inferenceTPG function
 codegen_h_graph_file="${expe_folder}/outLogs/CodeGen/codeGenArmlearn.h"
 if [ -f "${codegen_h_graph_file}" ]; then
-    # replace the function inferenceTPG() signature to use correcpt type 
+    # replace the function inferenceTPG() signature to use correct type 
     sed -i "s/void inferenceTPG(double\* actions);/void inferenceTPG(${instrType}\* actions);/" "${codegen_h_graph_file}"
+
+     # add externHeader include just after <stdlib.h> if missing
+    if ! grep -q '#include "externHeader.h"' "${codegen_h_graph_file}"; then
+        sed -i '/#include <stdlib.h>/a\
+#include "externHeader.h"' "${codegen_h_graph_file}"
+    fi
+
 
     # add C++ extern "C" guards if they are missing
     if ! grep -q 'extern "C"' "${codegen_h_graph_file}"; then
@@ -71,7 +79,7 @@ else
     echo "Warning: ${codegen_h_graph_file} not found, skipping graph header patch."
 fi
 
-# Patch codeGenArmlearn_program.c to use the correct type for all 'double'
+# Patch codeGenArmlearn_program.c to use the correct type for LE inputs and numeric types
 codegen_c_program_file="${expe_folder}/outLogs/CodeGen/codeGenArmlearn_program.c"
 if [ -f "${codegen_c_program_file}" ]; then
     # change numeric type from double to instrType
