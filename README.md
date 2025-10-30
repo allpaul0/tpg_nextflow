@@ -97,5 +97,5 @@ apptainer shell --bind ${EXPE_CONFIG}/params:/params/ --bind ${EXPE_CONFIG}/outL
 launch the problematic command and reproduce the error
 ```
 cd /
-./armlearn-wrapper/build/armGegelati 
+./armlearn-wrapper/build/Training 
 ```

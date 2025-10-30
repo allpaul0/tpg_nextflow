@@ -19,7 +19,7 @@ process generate_code {
     sed -i 's/"testPath": "outLogs"/"testPath": ".\\/outLogs\\/out_best.dot"/' ./${expe_folder}/params/trainParams.json
     
     # run the code generation inside the Singularity container
-    apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-armlearn.sif /bin/bash -c "cd / && ./armlearn-wrapper/build/armGraphPruner"
+    apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-armlearn.sif /bin/bash -c "cd / && ./armlearn-wrapper/build/CodeGen"
 
     # Patch generated code to use correct data types
     ./patch_generated_code.sh "${expe_folder}"
