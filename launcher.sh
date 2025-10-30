@@ -10,14 +10,45 @@ for arg in "$@"; do
             mini_config="${arg#*=}"
             shift # remove this argument from $@
             ;;
+        --target=*)
+            target="${arg#*=}"
+            shift
+            ;;
     esac
 done
 
-echo "Using mini_config=$mini_config"
+# If no target provided, prompt the user (fail in non-interactive shells)
+if [ -z "$target" ]; then
+    if [ -t 0 ]; then
+        echo "Select target pipeline:"
+        echo "  1) train"
+        echo "  2) prepare_inf"
+        read -p "Enter choice (train/prepare_inf): " target
+    else
+        echo "Error: --target must be provided in non-interactive mode. Allowed: train, prepare_inf"
+        exit 1
+    fi
+fi
+
+# Map short target names to pipeline files
+case "$target" in
+    train|train.nf)
+        target_file="./pipeline/train.nf"
+        ;;
+    prepare_inf|prepare_inf.nf)
+        target_file="./pipeline/prepare_inf.nf"
+        ;;
+    *)
+        echo "Invalid target: $target. Allowed values: train, prepare_inf"
+        exit 1
+        ;;
+esac
+
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
+
 
 # Trap SIGINT and terminate Nextflow gracefully
 trap 'log "Terminating Nextflow..."; kill $(pgrep -f "nextflow"); exit 0' SIGINT
@@ -63,12 +94,13 @@ done
 # This setup lets Nextflow inside the container submit jobs
 # directly to the host’s SLURM cluster using the same credentials and config.
 
+log "Using mini_config=$mini_config, target=$target_file"
 log "Start pipeline with nextflow"
 apptainer exec \
     --bind /etc/munge:/etc/munge \
     --bind /run/munge:/run/munge \
     --bind /etc/slurm:/etc/slurm containers/nextflow-insa.sif \
-    nextflow run ./pipeline/main.nf \
+    nextflow run "$target_file" \
     --mini_config="$mini_config" \
     --projectRoot "$(pwd)" \
     -c ./configs/nextflow.config,./configs/trainings.config \

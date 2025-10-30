@@ -1,11 +1,11 @@
 #!/usr/bin/env nextflow
 include { generate_configs } from "./process/generate_configs.nf"
 include { train_tpg } from "./process/train_tpg.nf"
-include { generate_code } from "./process/generate_code.nf"
 include { parse_results } from "./process/parse_results.nf"
-include { build_executables } from "./process/build_executables.nf"
 
 nextflow.enable.dsl=2
+
+// This pipeline trains TPGs based on various configurations and parses the results
 
 workflow {
     def ch_data_types = Channel.from(params.data_types)
@@ -34,10 +34,4 @@ workflow {
     all_trained_TPGs = trained_TPGs.collect()
 
     parsed_results = parse_results(all_trained_TPGs)
-
-    // seeds_all_trained_TPGs = generate_seeds(trained_TPGs)
-    
-    //generated_codes = generate_code(trained_TPGs)
-
-    // build_executables(generated_codes)
 }
