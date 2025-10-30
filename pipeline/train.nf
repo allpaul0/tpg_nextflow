@@ -33,5 +33,5 @@ workflow {
 
     all_trained_TPGs = trained_TPGs.collect()
 
-    parsed_results = parse_results(all_trained_TPGs)
+    parse_results(all_trained_TPGs)
 }
