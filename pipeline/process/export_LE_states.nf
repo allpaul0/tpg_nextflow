@@ -12,6 +12,6 @@ process generate_configs {
     // This script generates the Learning Environment initial states for inference.  
     script:
     """
-    ruby /home-reseau/pallaire/tpg_nextflow/pipeline/scripts/generate_seeds.rb true 0 
+    ruby /home-reseau/pallaire/tpg_nextflow/pipeline/scripts/export_LE_states
     """
 }
