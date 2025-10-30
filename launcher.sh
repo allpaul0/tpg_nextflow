@@ -29,6 +29,7 @@ cd "$(dirname "$0")"
 
 log "Build containers"
 
+# Find all container definition files
 container_defs=()
 for def_file in containers/*.def; do
     [ -e "$def_file" ] || continue
@@ -36,6 +37,7 @@ for def_file in containers/*.def; do
 done
 log "Found containers: ${container_defs[*]}"
 
+# Build containers if they don't exist or are outdated
 for container in "${container_defs[@]}"; do
     sif_file="containers/${container}.sif"
     def_file="containers/${container}.def"
@@ -46,6 +48,20 @@ for container in "${container_defs[@]}"; do
         log "Container is up-to-date: $container"
     fi
 done
+
+# Launch Nextflow pipeline with SLURM authentication via MUNGE.
+#
+# The host runs a SLURM cluster using MUNGE for secure authentication.
+# To let the container submit jobs to this cluster, we bind:
+#   - /etc/munge and /run/munge → share MUNGE keys and sockets for authentication
+#   - /etc/slurm → share SLURM configuration from the host
+#
+# MUNGE allows processes across nodes to authenticate securely.
+# Without it, SLURM jobs submitted from the container would fail
+# because they couldn’t authenticate with the host’s controller.
+#
+# This setup lets Nextflow inside the container submit jobs
+# directly to the host’s SLURM cluster using the same credentials and config.
 
 log "Start pipeline with nextflow"
 apptainer exec \
