@@ -14,8 +14,8 @@ echo "Building code for TPG model in ${expe_folder}"
 cp -r /armlearn-wrapper ./ 
 
 # Copy generated code files into src/codegen
-cp ${expe_folder}/outLogs/CodeGen/TPG_program.* armlearn-wrapper/src/codegen
-cp ${expe_folder}/outLogs/CodeGen/TPG.* armlearn-wrapper/src/codegen
+cp ${expe_folder}/outLogs/codegen/TPG_program.* armlearn-wrapper/src/codegen
+cp ${expe_folder}/outLogs/codegen/TPG.* armlearn-wrapper/src/codegen
 
 # Get instrType to know how to compile
 INSTR_TYPE=$(jq -r '.instrType' ${expe_folder}/params/trainParams.json)
@@ -48,4 +48,4 @@ cmake --build . --target InferenceBenchmark
 
 cd ../..
 # Move the executable to the output folder
-mv ./armlearn-wrapper/build/InferenceBenchmark ${expe_folder}/outLogs/CodeGen/.
+mv ./armlearn-wrapper/build/InferenceBenchmark ${expe_folder}/outLogs/codegen/.

@@ -36,9 +36,9 @@ def codegen_done?(d)
 end
 
 def precalcul_done?(d)
-    precalcul_dir = File.join(d, 'PreCalcul')
+    precalcul_dir = File.join(d, 'precalul')
     if File.directory?(precalcul_dir)
-      puts "\033[1;36mSkip #{d} \033[0m(PreCalcul already done)\n"
+      puts "\033[1;36mSkip #{d} \033[0m(precalul already done)\n"
       true
     else
       false
@@ -170,7 +170,7 @@ dirs.each do |d|
             check_exit_status($?.to_i)
             
             # Results of the SeedsGraphTraversal saved by the program into the concerned TPG dir
-            # system("mv Results/seeds_nbActionsToTerminal.h ../../../#{TPG_dir}/#{d}/PreCalcul/.")
+            # system("mv Results/LE_states.h ../../../#{TPG_dir}/#{d}/precalul/.")
             check_exit_status($?.to_i)
         
         end

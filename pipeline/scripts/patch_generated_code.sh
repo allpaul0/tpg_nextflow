@@ -21,7 +21,7 @@ fi
 echo "Convert registers to ${instrType} format"
 
 # Patch TPG.c to use the correct type for bestScore and challengerScore
-codegen_c_graph_file="${expe_folder}/outLogs/CodeGen/TPG.c"
+codegen_c_graph_file="${expe_folder}/outLogs/codegen/TPG.c"
 if [ -f "${codegen_c_graph_file}" ]; then
     # Always replace the function signature and pointer type
     sed -i "s/int bestProgram(double \*results, int nb)/int bestProgram(${instrType} *results, int nb)/" "${codegen_c_graph_file}"
@@ -46,8 +46,8 @@ else
     echo "Warning: ${codegen_c_graph_file} not found, skipping graph c patch."
 fi
 
-# Patch CodeGenArmlearn.h to use the correct type for inferenceTPG function
-codegen_h_graph_file="${expe_folder}/outLogs/CodeGen/TPG.h"
+# Patch TPG.h to use the correct type for inferenceTPG function
+codegen_h_graph_file="${expe_folder}/outLogs/codegen/TPG.h"
 if [ -f "${codegen_h_graph_file}" ]; then
     # replace the function inferenceTPG() signature to use correct type 
     sed -i "s/void inferenceTPG(double\* actions);/void inferenceTPG(${instrType}\* actions);/" "${codegen_h_graph_file}"
@@ -80,7 +80,7 @@ else
 fi
 
 # Patch TPG_program.c to use the correct type for LE inputs and numeric types
-codegen_c_program_file="${expe_folder}/outLogs/CodeGen/TPG_program.c"
+codegen_c_program_file="${expe_folder}/outLogs/codegen/TPG_program.c"
 if [ -f "${codegen_c_program_file}" ]; then
     # change numeric type from double to instrType
     sed -i "s/double/${instrType}/g" "${codegen_c_program_file}"
@@ -93,7 +93,7 @@ fi
 
 
 # Patch TPG_program.h to use the correct type for P functions
-codegen_h_program_file="${expe_folder}/outLogs/CodeGen/TPG_program.h"
+codegen_h_program_file="${expe_folder}/outLogs/codegen/TPG_program.h"
 if [ -f "${codegen_h_program_file}" ]; then
     sed -i -E "s/double P([0-9]+)\(\);/${instrType} P\\1();/g" "${codegen_h_program_file}"
 else
