@@ -22,6 +22,6 @@ process generate_code {
     apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-armlearn.sif /bin/bash -c "cd / && ./armlearn-wrapper/build/CodeGen"
 
     # Patch generated code to use correct data types
-    ./patch_generated_code.sh "${expe_folder}"
+    bash ${projectDir}/scripts/patch_generated_code.sh "${expe_folder}"
     """
 }
