@@ -26,11 +26,11 @@ Build containers and launch the pipeline:
 ```
 On SLURM clusters:
 ```sh
-sbatch --wrap="./launcher.sh"
+sbatch --wrap="./launcher.sh --target=train"
 ```
 Resume:
 ```sh
-sbatch --wrap="./launcher.sh -resume"
+sbatch --wrap="./launcher.sh --target=train -resume"
 ```
 
 Attention à la durée de vie allouée à sbtach.
@@ -51,7 +51,7 @@ If the training time is not the **limiting factor** for the training, the **numb
 ```
 On SLURM clusters:
 ```sh
-sbatch --wrap="./launcher.sh --mini_config=2"
+sbatch --wrap="./launcher.sh --target=train --mini_config=2"
 ```
 
 ### What happens when lauching with miniconfig
