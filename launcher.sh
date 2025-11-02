@@ -6,7 +6,7 @@ mini_config=0
 # Parse optional argument --mini_config=VALUE
 for arg in "$@"; do
     case $arg in
-        --mini-config=*)
+        --mini_config=*)
             mini_config="${arg#*=}"
             shift # remove this argument from $@
             ;;
@@ -97,9 +97,6 @@ done
 log "Using mini_config=$mini_config, target=$target_file"
 log "Start pipeline with nextflow"
 apptainer exec \
-    #--bind /etc/munge:/etc/munge \
-    #--bind /run/munge:/run/munge \
-    #--bind /etc/slurm:/etc/slurm \ 
     containers/nextflow-insa.sif \
     nextflow run "$target_file" \
     --mini_config="$mini_config" \
