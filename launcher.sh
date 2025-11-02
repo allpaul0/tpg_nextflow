@@ -97,9 +97,10 @@ done
 log "Using mini_config=$mini_config, target=$target_file"
 log "Start pipeline with nextflow"
 apptainer exec \
-    --bind /etc/munge:/etc/munge \
-    --bind /run/munge:/run/munge \
-    --bind /etc/slurm:/etc/slurm containers/nextflow-insa.sif \
+    #--bind /etc/munge:/etc/munge \
+    #--bind /run/munge:/run/munge \
+    #--bind /etc/slurm:/etc/slurm \ 
+    containers/nextflow-insa.sif \
     nextflow run "$target_file" \
     --mini_config="$mini_config" \
     --projectRoot "$(pwd)" \
