@@ -27,6 +27,8 @@ workflow {
         .combine(ch_data_types)
         .map { seed, instruction_set, type -> instruction_set + [seed: seed, instrType: type] }
         
+    ch_configs.view { config -> "CONFIG: ${config}" }
+
     configs = generate_configs(ch_configs, ch_hyperparams, use_local_params)
 
     trained_TPGs = train_tpg(configs)
