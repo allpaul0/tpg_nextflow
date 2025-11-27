@@ -75,9 +75,9 @@ Check the progress of jobs
 squeue
 ``` 
 Kill job 
-```
+```bash
 scancel $job_id
-```
+```bash
 Kill all my jobs
 ```
 scancel --user $user_id
@@ -85,17 +85,36 @@ scancel --user $user_id
 
 ## debug procedure 
 enter the workdir to reproduce the bug
-```
+```bash
 cd work/${id_workdir}/${hash_workdir}
 ```
 
 interactively connect to the container
-```
+```bash
 apptainer shell --bind ${EXPE_CONFIG}/params:/params/ --bind ${EXPE_CONFIG}/outLogs/:/outLogs /home-reseau/$USER/tpg_nextflow/containers/gegelati-armlearn.sif 
 ```
 
 launch the problematic command and reproduce the error
-```
+```bash
 cd /
 ./armlearn-wrapper/build/Training 
+```
+
+## Production
+## Create an overlay (a writable overlay FS, binded at runtime)
+Creates a 4Go overlay.
+```bash
+apptainer overlay create --size 4096 containers/overlay.img
+```
+
+Bind the overlay to the apptainer.
+```bash
+apptainer shell --overlay containers/overlay.img containers/x-heep.sif 
+```
+
+## Development
+
+Bind a dir to the apptainer.
+```bash
+apptainer shell --bind x-heep:/opt/x-heep containers/x-heep.sif  
 ```
