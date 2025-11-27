@@ -107,6 +107,6 @@ apptainer exec \
     nextflow run "$target_file" \
     --mini_config="$mini_config" \
     --projectRoot "$(pwd)" \
-    -c ./configs/nextflow.config,./configs/trainings.config,./configs/prepare_inference.config \
+    -c ./configs/nextflow.config,./configs/trainings.config,./configs/prepare_inference.config,./configs/inference.config \
     -with-report -with-dag \
     "$@"
