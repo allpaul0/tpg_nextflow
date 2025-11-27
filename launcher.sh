@@ -22,10 +22,11 @@ if [ -z "$target" ]; then
     if [ -t 0 ]; then
         echo "Select target pipeline:"
         echo "  1) train"
-        echo "  2) prepare_inf"
-        read -p "Enter choice (train/prepare_inf): " target
+        echo "  2) prepare_inference"
+        echo "  3) inference"
+        read -p "Enter choice (train/prepare_inference/inference): " target
     else
-        echo "Error: --target must be provided in non-interactive mode. Allowed: train, prepare_inf"
+        echo "Error: --target must be provided in non-interactive mode. Allowed: train, prepare_inference, inference"
         exit 1
     fi
 fi
@@ -35,11 +36,14 @@ case "$target" in
     train|train.nf)
         target_file="./pipeline/train.nf"
         ;;
-    prepare_inf|prepare_inf.nf)
-        target_file="./pipeline/prepare_inf.nf"
+    prepare_inference|prepare_inference.nf)
+        target_file="./pipeline/prepare_inference.nf"
+        ;;
+    inference|inference.nf)
+        target_file="./pipeline/inference.nf"
         ;;
     *)
-        echo "Invalid target: $target. Allowed values: train, prepare_inf"
+        echo "Invalid target: $target. Allowed values: train, prepare_inference, inference"
         exit 1
         ;;
 esac
@@ -103,6 +107,6 @@ apptainer exec \
     nextflow run "$target_file" \
     --mini_config="$mini_config" \
     --projectRoot "$(pwd)" \
-    -c ./configs/nextflow.config,./configs/trainings.config,./configs/prepare_inf.config \
+    -c ./configs/nextflow.config,./configs/trainings.config,./configs/prepare_inference.config \
     -with-report -with-dag \
     "$@"
