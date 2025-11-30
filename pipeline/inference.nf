@@ -1,5 +1,6 @@
 #!/usr/bin/env nextflow
 include { inference_simulator } from "./process/inference_simulator.nf"
+include { generate_TPG_ISA_UARCH_configs } from "./process/generate_TPG_ISA_UARCH_configs.nf"
 
 nextflow.enable.dsl=2
 
@@ -14,17 +15,27 @@ nextflow.enable.dsl=2
 workflow {
 
     // Channel of prepared TPG folders
-    def ch_prepared_TPGs = Channel.fromPath(params.prepared_TPGs_path, type: 'dir')
+    def ch_prepared_TPGs = Channel.fromPath("tpg_expe/training_results/*", type: 'dir')//params.prepared_TPGs_path
+
+    if (params.mini_config != 0) {
+        println "Using mini configuration for testing purposes..."
+        ch_prepared_TPGs = ch_prepared_TPGs.take(params.mini_config)
+    }
+
+    // Generate JSON configs using Python
+    def ch_configs = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs)
 
     // For each TPG, flatten JSON config files
-    def ch_TPG_JSONs = ch_prepared_TPGs
+    def ch_TPG_JSONs = ch_configs
         .flatMap { tpg_folder ->
-            def config_dir = file("${tpg_folder}/inference_experimentations/configs")
-            config_dir.listFiles().findAll { it.name.endsWith(".json") }
+            def config = file("${tpg_folder}/inference/configs")
+            config.listFiles()
+                     .findAll { it.name.endsWith(".json") }
+                     .collect { jsonFile -> tuple(tpg_folder, jsonFile) }
         }
     
     // display the JSONs found
-    ch_TPG_JSONs.view { "Found TPG JSON config: ${it}" }
+    // ch_TPG_JSONs.view { t -> "Found TPG JSON config: ${t[1]} in folder ${t[0]}" }
 
     // Run inference simulator for each JSON config
     inference_simulator(ch_TPG_JSONs)
