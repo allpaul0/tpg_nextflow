@@ -13,6 +13,8 @@ From: ubuntu:22.04
         openjdk-17-jre-headless \
         libmunge2 \
         libmunge-dev \
+        jq \
+        python3 \
         && apt-get clean
     
     apt install -y wget
@@ -34,6 +36,7 @@ From: ubuntu:22.04
 
 %environment
     export PATH=/usr/local/bin:$PATH
+    export PYTHONIOENCODING=utf-8
     # If you install a specific NXF_VER, export it here for reproducibility
     # export NXF_VER=23.10.1 :contentReference[oaicite:2]{index=2}
 
@@ -42,4 +45,5 @@ From: ubuntu:22.04
 
 %labels
     Author Karol Desnos
+    Author Paul Allaire
     Version ubuntu-slurm-nextflow-2.0
