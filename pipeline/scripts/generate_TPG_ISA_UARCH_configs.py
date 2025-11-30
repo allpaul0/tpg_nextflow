@@ -4,6 +4,19 @@ import shutil
 import json
 from pathlib import Path
 
+# --------------------------------------------------------------
+# DETERMINE COMPILER BASED ON ISA
+# --------------------------------------------------------------
+def determine_compiler(isa: str) -> str:
+    """
+    Return the compiler path based on the ISA:
+    - If 'xpulp' in ISA -> /opt/tools/corev
+    - Otherwise -> /opt/tools/riscv
+    """
+    if "xpulp" in isa.lower():
+        return "/opt/tools/corev"
+    return "/opt/tools/riscv"
+
 
 # --------------------------------------------------------------
 # FUNCTION TO EXPAND ISA ARGUMENTS
@@ -31,23 +44,23 @@ def expand_isa(isa):
 # Each entry: uarch → (isa, abi)
 # --------------------------------------------------------------
 UARCH_CONFIGS_RAW = {
-    "cv32e20_im0": ("rv32i(c)", "ilp32"),
-    "cv32e20_im1": ("rv32im(c)", "ilp32"),
-    "cv32e20_im2": ("rv32im(c)", "ilp32"),
-    "cv32e20_im3": ("rv32im(c)", "ilp32"),
+    "cv32e20_im0": ("rv32i(c)_zicsr", "ilp32"),
+    "cv32e20_im1": ("rv32im(c)_zicsr", "ilp32"),
+    "cv32e20_im2": ("rv32im(c)_zicsr", "ilp32"),
+    "cv32e20_im3": ("rv32im(c)_zicsr", "ilp32"),
 
-    "cv32e20_em0": ("rv32e(c)", "ilp32e"),
-    "cv32e20_em1": ("rv32em(c)", "ilp32e"),
-    "cv32e20_em2": ("rv32em(c)", "ilp32e"),
-    "cv32e20_em3": ("rv32em(c)", "ilp32e"),
+    "cv32e20_em0": ("rv32e(c)_zicsr", "ilp32e"),
+    "cv32e20_em1": ("rv32em(c)_zicsr", "ilp32e"),
+    "cv32e20_em2": ("rv32em(c)_zicsr", "ilp32e"),
+    "cv32e20_em3": ("rv32em(c)_zicsr", "ilp32e"),
 
-    "cv32e40x_im0": ("rv32i(c)", "ilp32"),
+    "cv32e40x_im0": ("rv32i(c)_zicsr", "ilp32"),
     "cv32e40x_im1": ("rv32i(c)_zicsr_zmmul", "ilp32"),
-    "cv32e40x_im2": ("rv32im(c)", "ilp32"),
+    "cv32e40x_im2": ("rv32im(c)_zicsr", "ilp32"),
 
-    "cv32e40x_em0": ("rv32e(c)", "ilp32e"),
+    "cv32e40x_em0": ("rv32e(c)_zicsr", "ilp32e"),
     "cv32e40x_em1": ("rv32e(c)_zicsr_zmmul", "ilp32e"),
-    "cv32e40x_em2": ("rv32em(c)", "ilp32e"),
+    "cv32e40x_em2": ("rv32em(c)_zicsr", "ilp32e"),
 
     "cv32e40px": ("rv32im(c)_zicsr", "ilp32"),
     "cv32e40px_fpu": ("rv32imf(c)_zicsr", "ilp32f"),
@@ -83,7 +96,7 @@ def infer_dtype(folder_name):
 # Validity rules based on dtype and uarch FPU
 # --------------------------------------------------------------
 def is_valid_combination(dtype, uarch_has_fpu):
-    if dtype in ("FIXEDPT", "DOUBLE") and microarch_has_fpu(uarch_has_fpu):
+    if dtype in ("fixedpt", "double") and microarch_has_fpu(uarch_has_fpu):
         return False
     return True
 
@@ -93,8 +106,14 @@ def is_valid_combination(dtype, uarch_has_fpu):
 # --------------------------------------------------------------
 def generate(tpg_folder):
     tpg_folder = Path(tpg_folder)
-    outdir = tpg_folder / "inference_experimentations" / "configs"
+    outdir = tpg_folder / "inference" / "configs"
     outdir.mkdir(exist_ok=True, parents=True)
+    outdir_results = tpg_folder / "inference" / "results"
+    outdir_results.mkdir(exist_ok=True, parents=True)
+    outdir_overlays = tpg_folder / "inference" / "overlays"
+    outdir_overlays.mkdir(exist_ok=True, parents=True)
+    outdir_overlays = tpg_folder / "inference" / "tpg_inference_expe"
+    outdir_overlays.mkdir(exist_ok=True, parents=True)
 
     dtype = infer_dtype(tpg_folder.name)
 
@@ -107,6 +126,8 @@ def generate(tpg_folder):
         expanded_isas = expand_isa(isa_raw)
 
         for isa in expanded_isas:
+            compiler = determine_compiler(isa)
+
             filename = f"{uarch}_{isa}_{abi}_{dtype}.json"
             filepath = outdir / filename
 
@@ -117,6 +138,7 @@ def generate(tpg_folder):
                 "isa": isa,
                 "abi": abi,
                 "dtype": dtype,
+                "compiler": compiler
             }
 
             with open(filepath, "w") as f:
