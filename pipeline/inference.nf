@@ -25,15 +25,22 @@ workflow {
     // Generate JSON configs using Python
     def ch_configs = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs)
 
+    def takeFirstOnly = true  // or false
+
     // For each TPG, flatten JSON config files
     def ch_TPG_JSONs = ch_configs
         .flatMap { tpg_folder ->
             def config = file("${tpg_folder}/inference/configs")
-            config.listFiles()
-                     .findAll { it.name.endsWith(".json") }
-                     .collect { jsonFile -> tuple(tpg_folder, jsonFile) }
-        }
-    
+            def jsonFiles = config.listFiles()
+                                .findAll { it.name.endsWith(".json") }
+
+            if (takeFirstOnly && jsonFiles) {
+                jsonFiles = [ jsonFiles[0] ]
+            }
+
+            jsonFiles.collect { jsonFile -> tuple(tpg_folder, jsonFile) }
+    }
+
     // display the JSONs found
     // ch_TPG_JSONs.view { t -> "Found TPG JSON config: ${t[1]} in folder ${t[0]}" }
 
