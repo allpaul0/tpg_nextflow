@@ -12,6 +12,8 @@ uarch=$(jq -r '.uarch' ${expe_json})
 isa=$(jq -r '.isa' ${expe_json})
 abi=$(jq -r '.abi' ${expe_json})
 dtype=$(jq -r '.dtype' ${expe_json} | tr '[:lower:]' '[:upper:]')
+dtype_upper=$(echo "$dtype" | tr '[:lower:]' '[:upper:]')
+dtype_lower=$(echo "$dtype" | tr '[:upper:]' '[:lower:]')
 compiler=$(jq -r '.compiler' ${expe_json})
 
 # paths
@@ -23,7 +25,7 @@ echo "TPG folder: ${tpg_folder}"
 
 # display all parameters
 echo "tpg=${tpg}"
-echo "uarch=${uarch} isa=${isa} abi=${abi} dtype=${dtype} compiler=${compiler}"
+echo "uarch=${uarch} isa=${isa} abi=${abi} dtype=${dtype_lower} compiler=${compiler}"
 echo "params_dir=${params_dir}"
 echo "outlogs_dir=${outlogs_dir}"
 echo "inference_dir=${inference_dir}"
@@ -31,25 +33,26 @@ echo "simulators_dir=${simulators_dir}"
 echo "project_root=${project_root}"
 
 # build 32MB Apptainer overlay 
-apptainer overlay create --size 512 "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype}.img" 
+apptainer overlay create --size 512 "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype_lower}.img" 
 
 # run Apptainer
 apptainer exec \
-    --overlay "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype}.img" \
+    --overlay "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype_lower}.img" \
     --bind $params_dir:/params/ \
     --bind $outlogs_dir:/outLogs/ \
     --bind $inference_dir:/inference/ \
-    --bind $inference_dir/tpg_inference_expe:/x-heep/sw/applications/tpg_inference_expe \
     --bind $simulators_dir:/x-heep/experimentations/microarchitectures/simulators/:ro \
     ${project_root}/containers/x-heep.sif \
     /bin/bash -c "\
-    cp -r /x-heep/sw/applications/tpg_inference/* /x-heep/sw/applications/tpg_inference_expe/. && \
-    cp /outLogs/codegen/TPG* /x-heep/sw/applications/tpg_inference_expe/codegen/. && \
-    cp /outLogs/precalcul/LE_states.h /x-heep/sw/applications/tpg_inference_expe/precalcul/. && \
+    cp /outLogs/codegen/TPG* /x-heep/sw/applications/tpg_inference/codegen/. && \
+    cp /outLogs/precalcul/LE_states.h /x-heep/sw/applications/tpg_inference/precalcul/. && \
     cd /x-heep && \
-    ls sw/applications/tpg_inference_expe/ && \
 
-    ./scripts/automatic-simulation/simulation.sh ${uarch} ${isa} ${abi} ${dtype} ${compiler} && \
-    mv experimentations/simulations/${uarch}_${isa}_${abi}_${dtype}.json /inference/results/."
+    mkdir -p experimentations/simulations && \
+    ls experimentations/simulations/ && \
+    ${project_root}/pipeline/scripts/generate-mcu/generate-mcu.sh ${uarch} && \
 
-rm "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype}.img"
+    ./scripts/automatic-simulation/simulation.sh tpg_inference ${uarch} ${isa} ${abi} ${dtype_upper} ${compiler} && \
+    mv experimentations/simulations/${uarch}_${isa}_${abi}_${dtype_lower}.json /inference/results/."
+
+rm "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype_lower}.img"
