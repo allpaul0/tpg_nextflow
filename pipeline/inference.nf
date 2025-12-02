@@ -15,7 +15,7 @@ nextflow.enable.dsl=2
 workflow {
 
     // Channel of prepared TPG folders
-    def ch_prepared_TPGs = Channel.fromPath("tpg_expe/training_results/*", type: 'dir')//params.prepared_TPGs_path
+    def ch_prepared_TPGs = Channel.fromPath(params.prepared_TPGs_path, type: 'dir')
 
     if (params.mini_config != 0) {
         println "Using mini configuration for testing purposes..."
@@ -25,7 +25,7 @@ workflow {
     // Generate JSON configs using Python
     def ch_configs = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs)
 
-    def takeFirstOnly = true  // or false
+    def takeFirstOnly = false  // or false
 
     // For each TPG, flatten JSON config files
     def ch_TPG_JSONs = ch_configs
