@@ -1,6 +1,4 @@
 process generate_configs {
-    executor = 'local' //if cluster is full
-    container = 'gegelati-armlearn.sif'
     cpus = 1
     memory = '1 GB'
     time = '5m'
