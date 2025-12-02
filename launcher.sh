@@ -6,9 +6,9 @@ mini_config=0
 # Parse optional argument --mini_config=VALUE
 for arg in "$@"; do
     case $arg in
-        --mini-config=*)
+        --mini_config=*)
             mini_config="${arg#*=}"
-            shift # remove this argument from $@
+            shift
             ;;
         --target=*)
             target="${arg#*=}"
@@ -31,16 +31,19 @@ if [ -z "$target" ]; then
     fi
 fi
 
-# Map short target names to pipeline files
+# Map target to pipeline file
 case "$target" in
     train|train.nf)
         target_file="./pipeline/train.nf"
+        selected_config="./configs/trainings.config"
         ;;
     prepare_inference|prepare_inference.nf)
         target_file="./pipeline/prepare_inference.nf"
+        selected_config="./configs/prepare_inference.config"
         ;;
     inference|inference.nf)
         target_file="./pipeline/inference.nf"
+        selected_config="./configs/inference.config"
         ;;
     *)
         echo "Invalid target: $target. Allowed values: train, prepare_inference, inference"
@@ -48,11 +51,9 @@ case "$target" in
         ;;
 esac
 
-
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
-
 
 # Trap SIGINT and terminate Nextflow gracefully
 trap 'log "Terminating Nextflow..."; kill $(pgrep -f "nextflow"); exit 0' SIGINT
@@ -84,29 +85,18 @@ for container in "${container_defs[@]}"; do
     fi
 done
 
-# Launch Nextflow pipeline with SLURM authentication via MUNGE.
-#
-# The host runs a SLURM cluster using MUNGE for secure authentication.
-# To let the container submit jobs to this cluster, we bind:
-#   - /etc/munge and /run/munge → share MUNGE keys and sockets for authentication
-#   - /etc/slurm → share SLURM configuration from the host
-#
-# MUNGE allows processes across nodes to authenticate securely.
-# Without it, SLURM jobs submitted from the container would fail
-# because they couldn’t authenticate with the host’s controller.
-#
-# This setup lets Nextflow inside the container submit jobs
-# directly to the host’s SLURM cluster using the same credentials and config.
-
-log "Using mini_config=$mini_config, target=$target_file"
+log "Using mini_config=$mini_config, target=$target_file, config=$selected_config"
 log "Start pipeline with nextflow"
+
 apptainer exec \
     --bind /etc/munge:/etc/munge \
     --bind /run/munge:/run/munge \
-    --bind /etc/slurm:/etc/slurm containers/nextflow-insa.sif \
+    --bind /etc/slurm:/etc/slurm \
+    containers/nextflow-insa.sif \
     nextflow run "$target_file" \
     --mini_config="$mini_config" \
     --projectRoot "$(pwd)" \
-    -c ./configs/nextflow.config,./configs/trainings.config,./configs/prepare_inference.config,./configs/inference.config \
+    -c ./configs/nextflow.config \
+    -c "$selected_config" \
     -with-report -with-dag \
     "$@"
