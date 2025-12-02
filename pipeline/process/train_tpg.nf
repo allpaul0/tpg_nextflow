@@ -15,6 +15,6 @@ process train_tpg {
     script:
     """
     echo "Training TPG model with ${expe_folder}"
-    apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-armlearn.sif /bin/bash -c "cd / && ./armlearn-wrapper/build/Training"
+    apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-armlearn.sif /bin/bash -c "cd / && cp /armlearn-wrapper/params/AllTarget.csv /params/. && cp /armlearn-wrapper/params/ValidationTrajectories.txt /params/.  && ./armlearn-wrapper/build/Training && rm /params/AllTarget.csv /params/ValidationTrajectories.txt"
     """
 }

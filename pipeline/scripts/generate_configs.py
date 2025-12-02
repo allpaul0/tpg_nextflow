@@ -13,7 +13,9 @@ def copy_files(expe_folder, custom_params_path, use_local_params):
     os.makedirs(params_folder, exist_ok=True)
     out_logs_folder = os.path.join(expe_folder, 'outLogs', 'dotfiles')
     os.makedirs(out_logs_folder, exist_ok=True)
-    files_to_copy = ['AllTarget.csv', 'trainParams.json', 'ValidationTrajectories.txt']
+    # AllTarget.csv and ValidationTrajectories.txt are cp and rm at runtime,
+    # we don't copy them to save space.
+    files_to_copy = ['trainParams.json']
     for file_name in files_to_copy:
         src_file_path = os.path.join(container_src_folder, file_name)
         dest_file_path = os.path.join(params_folder, file_name)
