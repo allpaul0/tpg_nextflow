@@ -1,0 +1,38 @@
+{
+    "simulator": "cv32e20_em2",
+    "isa": "rv32em_zicsr",
+    "abi": "ilp32e",
+    "dtype": "fixedpt",
+    "records": [
+        {
+            "Class": 0,
+            "Count": 10,
+            "AvgCyclesPerClass": 142,
+            "StddevCyclesPerClass": 0,
+            "ProfilingErrorPercentage": 0.0
+        },
+        {
+            "Class": 1,
+            "Count": 10,
+            "AvgCyclesPerClass": 201,
+            "StddevCyclesPerClass": 2,
+            "ProfilingErrorPercentage": 0.01
+        },
+        {
+            "Class": 2,
+            "Count": 10,
+            "AvgCyclesPerClass": 358,
+            "StddevCyclesPerClass": 2,
+            "ProfilingErrorPercentage": 0.0056
+        },
+        {
+            "Class": 3,
+            "Count": 10,
+            "AvgCyclesPerClass": 409,
+            "StddevCyclesPerClass": 14,
+            "ProfilingErrorPercentage": 0.0342
+        }
+    ],
+    "tpg_mean_latency": 277,
+    "tpg_stddev_latency": 109
+}

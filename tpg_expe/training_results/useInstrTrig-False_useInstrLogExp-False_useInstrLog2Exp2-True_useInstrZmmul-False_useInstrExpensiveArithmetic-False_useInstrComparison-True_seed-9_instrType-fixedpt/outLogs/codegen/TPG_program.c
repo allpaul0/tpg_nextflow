@@ -1,0 +1,241 @@
+/**
+ * File generated with GEGELATI v2.0.0
+ * On the 2025-11-24 14:17:18
+ * With the CodeGen::ProgramGenerationEngine.
+ */
+
+#include "TPG_program.h"
+
+
+fixedpt P0(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in3[1];
+		fixedpt op1 = in1[1];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P1(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	return reg[0];
+}
+
+fixedpt P2(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[0];
+		reg[0] = f_log2(op0);
+	}
+	return reg[0];
+}
+
+fixedpt P3(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = reg[7];
+		fixedpt op1 = in3[2];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P4(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in3[1];
+		fixedpt op1 = in3[1];
+		reg[0] = (op0 > op1) ? op0 : op1;
+	}
+	return reg[0];
+}
+
+fixedpt P5(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = reg[7];
+		fixedpt op1 = in3[2];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P6(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in3[1];
+		fixedpt op1 = in2[0];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P7(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in1[0];
+		fixedpt op1 = reg[6];
+		reg[0] = (op0 > op1) ? op0 : op1;
+	}
+	return reg[0];
+}
+
+fixedpt P8(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[1];
+		fixedpt op1 = in4[3];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P9(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[1];
+		fixedpt op1 = in4[2];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P10(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[0];
+		fixedpt op1 = in1[0];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+fixedpt P11(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = reg[7];
+		fixedpt op1 = in3[2];
+		reg[0] = (op0 > op1) ? op0 : op1;
+	}
+	return reg[0];
+}
+
+fixedpt P12(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[4];
+		reg[0] = f_pow2(op0);
+	}
+	return reg[0];
+}
+
+fixedpt P13(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[0];
+		fixedpt op1 = in2[0];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+fixedpt P14(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[0];
+		fixedpt op1 = in1[0];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+fixedpt P15(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[1];
+		fixedpt op1 = in4[3];
+		reg[0] = (op0 > op1) ? op0 : op1;
+	}
+	return reg[0];
+}
+
+fixedpt P16(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in3[1];
+		fixedpt op1 = in4[1];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P17(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[0];
+		fixedpt op1 = in1[0];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+fixedpt P18(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[1];
+		fixedpt op1 = in4[0];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P19(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in2[0];
+		fixedpt op1 = in4[3];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P20(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[1];
+		fixedpt op1 = in2[1];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+fixedpt P21(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in1[0];
+		fixedpt op1 = in4[3];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P22(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[1];
+		fixedpt op1 = in4[0];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+fixedpt P23(){
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[1];
+		fixedpt op1 = in4[1];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}

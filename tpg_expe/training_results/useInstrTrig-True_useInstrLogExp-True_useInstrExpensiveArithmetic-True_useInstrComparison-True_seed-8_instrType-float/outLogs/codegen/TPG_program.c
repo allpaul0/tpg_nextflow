@@ -1,0 +1,362 @@
+/**
+ * File generated with GEGELATI v2.0.0
+ * On the 2025-11-24 14:17:36
+ * With the CodeGen::ProgramGenerationEngine.
+ */
+
+#include "TPG_program.h"
+
+
+float P0(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[2];
+		reg[1] = cos(op0);
+	}
+	{
+		float op0 = reg[1];
+		float op1 = in4[4];
+		reg[4] = fmaxf(op0, op1);
+	}
+	{
+		float op0 = reg[4];
+		float op1 = in3[2];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P1(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in3[1];
+		float op1 = in1[2];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P2(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[0];
+		float op1 = in3[2];
+		reg[0] = fmaxf(op0, op1);
+	}
+	return reg[0];
+}
+
+float P3(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	return reg[0];
+}
+
+float P4(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[2];
+		reg[1] = cos(op0);
+	}
+	{
+		float op0 = reg[1];
+		float op1 = in4[4];
+		reg[4] = fmaxf(op0, op1);
+	}
+	{
+		float op0 = reg[4];
+		float op1 = in3[2];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P5(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in3[1];
+		float op1 = in1[2];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P6(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = reg[1];
+		reg[0] = exp(op0);
+	}
+	return reg[0];
+}
+
+float P7(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[1];
+		float op1 = in2[1];
+		reg[0] = fmaxf(op0, op1);
+	}
+	return reg[0];
+}
+
+float P8(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = reg[1];
+		float op1 = in3[1];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+float P9(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[0];
+		reg[1] = sin(op0);
+	}
+	{
+		float op0 = reg[1];
+		float op1 = in1[1];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+float P10(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[2];
+		reg[1] = cos(op0);
+	}
+	{
+		float op0 = reg[1];
+		float op1 = in4[4];
+		reg[4] = fmaxf(op0, op1);
+	}
+	{
+		float op0 = reg[4];
+		float op1 = in3[2];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P11(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[0];
+		float op1 = in3[0];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P12(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in4[5];
+		reg[0] = exp(op0);
+	}
+	return reg[0];
+}
+
+float P13(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in4[1];
+		float op1 = in1[1];
+		reg[6] = op0 - op1;
+	}
+	{
+		float op0 = reg[6];
+		reg[0] = log(op0);
+	}
+	return reg[0];
+}
+
+float P14(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[2];
+		reg[1] = cos(op0);
+	}
+	{
+		float op0 = reg[1];
+		float op1 = in4[4];
+		reg[4] = fmaxf(op0, op1);
+	}
+	{
+		float op0 = reg[4];
+		float op1 = in3[2];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P15(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in2[0];
+		float op1 = in3[0];
+		reg[0] = op0 / op1;
+	}
+	return reg[0];
+}
+
+float P16(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in4[2];
+		reg[0] = tan(op0);
+	}
+	return reg[0];
+}
+
+float P17(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in2[1];
+		float op1 = in2[0];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+float P18(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in3[2];
+		reg[0] = exp(op0);
+	}
+	return reg[0];
+}
+
+float P19(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = reg[6];
+		float op1 = in2[2];
+		reg[0] = fmaxf(op0, op1);
+	}
+	return reg[0];
+}
+
+float P20(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in4[4];
+		float op1 = in1[1];
+		reg[1] = op0 + op1;
+	}
+	{
+		float op0 = in1[1];
+		float op1 = reg[1];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+float P21(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[1];
+		float op1 = in1[0];
+		reg[6] = op0 + op1;
+	}
+	{
+		float op0 = reg[6];
+		float op1 = in2[2];
+		reg[0] = fmaxf(op0, op1);
+	}
+	return reg[0];
+}
+
+float P22(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in2[0];
+		float op1 = in3[0];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P23(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in3[2];
+		reg[0] = exp(op0);
+	}
+	return reg[0];
+}
+
+float P24(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in2[0];
+		float op1 = in3[1];
+		reg[0] = op0 / op1;
+	}
+	return reg[0];
+}
+
+float P25(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = reg[1];
+		float op1 = in3[1];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+float P26(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in2[1];
+		float op1 = in4[1];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P27(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[0];
+		float op1 = in3[1];
+		reg[0] = op0 / op1;
+	}
+	return reg[0];
+}
+
+float P28(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in1[0];
+		float op1 = in3[2];
+		reg[0] = op0 * op1;
+	}
+	return reg[0];
+}
+
+float P29(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in4[3];
+		float op1 = in3[1];
+		reg[0] = op0 - op1;
+	}
+	return reg[0];
+}
+
+float P30(){
+	float reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		float op0 = in3[0];
+		float op1 = in3[2];
+		reg[0] = op0 / op1;
+	}
+	return reg[0];
+}
