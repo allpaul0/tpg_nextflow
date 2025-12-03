@@ -26,6 +26,8 @@ echo "TPG folder: ${tpg_folder}"
 # display all parameters
 echo "tpg=${tpg}"
 echo "uarch=${uarch} isa=${isa} abi=${abi} dtype=${dtype_lower} compiler=${compiler}"
+echo "dtype_upper=${dtype_upper}"
+echo "dtype_lower=${dtype_lower}"
 echo "params_dir=${params_dir}"
 echo "outlogs_dir=${outlogs_dir}"
 echo "inference_dir=${inference_dir}"
@@ -44,14 +46,15 @@ apptainer exec \
     --bind $simulators_dir:/x-heep/experimentations/microarchitectures/simulators/:ro \
     ${project_root}/containers/x-heep.sif \
     /bin/bash -c "\
+    export XDG_CACHE_HOME=/inference/cache && mkdir -p /inference/cache && \
     cp /outLogs/codegen/TPG* /x-heep/sw/applications/tpg_inference/codegen/. && \
     cp /outLogs/precalcul/LE_states.h /x-heep/sw/applications/tpg_inference/precalcul/. && \
     cd /x-heep && \
 
     mkdir -p experimentations/simulations && \
     ls experimentations/simulations/ && \
-    ./scripts/generate-mcu/generate-mcu.sh ${uarch} && \
 
+    ./scripts/generate-mcu/generate-mcu.sh ${uarch} && \
     ./scripts/automatic-simulation/simulation.sh tpg_inference ${uarch} ${isa} ${abi} ${dtype_upper} ${compiler} && \
     mv experimentations/simulations/${uarch}_${isa}_${abi}_${dtype_lower}.json /inference/results/."
 
