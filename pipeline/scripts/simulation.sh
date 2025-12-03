@@ -50,7 +50,7 @@ apptainer exec \
 
     mkdir -p experimentations/simulations && \
     ls experimentations/simulations/ && \
-    ${project_root}/pipeline/scripts/generate-mcu/generate-mcu.sh ${uarch} && \
+    ./scripts/generate-mcu/generate-mcu.sh ${uarch} && \
 
     ./scripts/automatic-simulation/simulation.sh tpg_inference ${uarch} ${isa} ${abi} ${dtype_upper} ${compiler} && \
     mv experimentations/simulations/${uarch}_${isa}_${abi}_${dtype_lower}.json /inference/results/."
