@@ -1,6 +1,6 @@
 process inference_simulator {
     cpus = 1
-    memory = '2 GB'
+    memory = '1 GB'
     time = '1h'
 
     input:
