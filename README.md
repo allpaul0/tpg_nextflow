@@ -102,9 +102,9 @@ cd /
 
 ## Production
 ## Create an overlay (a writable overlay FS, binded at runtime)
-Creates a 4Go overlay.
+Creates a 512MB overlay.
 ```bash
-apptainer overlay create --size 4096 containers/overlay.img
+apptainer overlay create --size 512 containers/overlay.img
 ```
 
 Bind the overlay to the apptainer.
@@ -120,6 +120,7 @@ apptainer shell --bind x-heep:/opt/x-heep containers/x-heep.sif
 ```
 
 ## Development inference 
+
 ```bash
 ./launcher.sh --target=inference --mini_config=1
 ```
