@@ -118,3 +118,8 @@ Bind a dir to the apptainer.
 ```bash
 apptainer shell --bind x-heep:/opt/x-heep containers/x-heep.sif  
 ```
+
+## Development inference 
+```bash
+./launcher.sh --target=inference --mini_config=1
+```
