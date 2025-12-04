@@ -34,7 +34,7 @@ echo "inference_dir=${inference_dir}"
 echo "simulators_dir=${simulators_dir}"
 echo "project_root=${project_root}"
 
-# build 32MB Apptainer overlay 
+# build 512MB Apptainer overlay 
 apptainer overlay create --size 512 "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype_lower}.img" 
 
 # run Apptainer
