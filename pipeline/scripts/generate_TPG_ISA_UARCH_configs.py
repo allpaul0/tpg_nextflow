@@ -82,8 +82,8 @@ UARCH_CONFIGS_RAW = {
     "cv32e40px_corev_pulp": ("rv32im(c)_zicsr_xpulp", "ilp32"),
     "cv32e40px_corev_pulp_fpu": ("rv32imf(c)_zicsr_xpulp", "ilp32f"),
 
-    "cv32e40p": ("rv32im(c)_zicsr", "ilp32"),
-    "cv32e40p_corev_pulp": ("rv32im(c)_zicsr_xpulp", "ilp32"),
+    #"cv32e40p": ("rv32im(c)_zicsr", "ilp32"),
+    #"cv32e40p_corev_pulp": ("rv32im(c)_zicsr_xpulp", "ilp32"),
 }
 
 
