@@ -119,8 +119,11 @@ Bind a dir to the apptainer.
 apptainer shell --bind x-heep:/opt/x-heep containers/x-heep.sif  
 ```
 
+Do not use `apptainer run` to enter the `x-heep.sif` container, use `apptainer shell`, which allows to preserve defined environment variables from the def file
+
 ## Development inference 
 
 ```bash
 ./launcher.sh --target=inference --mini_config=1
 ```
+
