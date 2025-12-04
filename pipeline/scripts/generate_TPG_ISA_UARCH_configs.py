@@ -14,7 +14,7 @@ def determine_compiler(isa: str) -> str:
     - Otherwise -> /opt/tools/riscv
     """
     if "xpulp" in isa.lower():
-        return "/opt/tools/corev"
+        return "/opt/tools/corev/corev-openhw-gcc-ubuntu2204-20240530"
     return "/opt/tools/riscv"
 
 
@@ -38,6 +38,21 @@ def expand_isa(isa):
 
     return [base + suffix, base + "c" + suffix]
 
+# --------------------------------------------------------------
+# XPULP REPLACEMENT FUNCTION 
+# --------------------------------------------------------------
+def replace_xpulp_extensions(isa: str) -> str:
+    """
+    Replace '_xpulp' with:
+    _xcvalu_xcvbi_xcvbitmanip_xcvhwlp_xcvmac_xcvmem_xcvsimd
+    """
+    XPULP_EXT = "_xcvalu_xcvbi_xcvbitmanip_xcvhwlp_xcvmac_xcvmem_xcvsimd"
+
+    if "_xpulp" in isa:
+        return isa.replace("_xpulp", XPULP_EXT)
+
+    return isa
+
 
 # --------------------------------------------------------------
 # MICROARCHITECTURES 
@@ -55,16 +70,16 @@ UARCH_CONFIGS_RAW = {
     "cv32e20_em3": ("rv32em(c)_zicsr", "ilp32e"),
 
     "cv32e40x_im0": ("rv32i(c)_zicsr", "ilp32"),
-    "cv32e40x_im1": ("rv32i(c)_zicsr_zmmul", "ilp32"),
-    "cv32e40x_im2": ("rv32im(c)_zicsr", "ilp32"),
+    "cv32e40x_im1": ("rv32im(c)_zicsr", "ilp32"),
+    "cv32e40x_im2": ("rv32i(c)_zicsr_zmmul", "ilp32"),
 
     "cv32e40x_em0": ("rv32e(c)_zicsr", "ilp32e"),
-    "cv32e40x_em1": ("rv32e(c)_zicsr_zmmul", "ilp32e"),
-    "cv32e40x_em2": ("rv32em(c)_zicsr", "ilp32e"),
+    "cv32e40x_em1": ("rv32em(c)_zicsr", "ilp32e"),
+    "cv32e40x_em2": ("rv32e(c)_zicsr_zmmul", "ilp32e"),
 
     "cv32e40px": ("rv32im(c)_zicsr", "ilp32"),
     "cv32e40px_fpu": ("rv32imf(c)_zicsr", "ilp32f"),
-    "cv32e40px_corev_pulp": ("rv32im(c)_zicsr_xpulp", "ilp32f"),
+    "cv32e40px_corev_pulp": ("rv32im(c)_zicsr_xpulp", "ilp32"),
     "cv32e40px_corev_pulp_fpu": ("rv32imf(c)_zicsr_xpulp", "ilp32f"),
 
     "cv32e40p": ("rv32im(c)_zicsr", "ilp32"),
@@ -126,7 +141,10 @@ def generate(tpg_folder):
         expanded_isas = expand_isa(isa_raw)
 
         for isa in expanded_isas:
-            compiler = determine_compiler(isa)
+
+            compiler = determine_compiler(isa) #uses xpulp 
+
+            isa = replace_xpulp_extensions(isa) # replaces xpulp
 
             filename = f"{uarch}_{isa}_{abi}_{dtype}.json"
             filepath = outdir / filename
