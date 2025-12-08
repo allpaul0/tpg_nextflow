@@ -143,3 +143,9 @@ You ran apptainer run instead of apptainer shell -> the conda environment was no
 
 3. main.c not found
 make app XXX -> wrong app name 
+
+## tpg_expe composition 
+{fixedpt, float, double} × {base, expln, trigo, complete} + {fixedpt} {exp2log2} x {base, baseBare, base_zmmul} 
+
+De manière effective: 
+tpg_float_double, tpg_fixedpt_comp_logexp_trigo_complete, tpg_l2e2_zmmul_compbare_compExpAr
