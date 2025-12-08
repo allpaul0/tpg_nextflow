@@ -127,3 +127,19 @@ Do not use `apptainer run` to enter the `x-heep.sif` container, use `apptainer s
 ./launcher.sh --target=inference --mini_config=1
 ```
 
+## Delete every inference folder under tpg_expe/
+find tpg_expe/*/* -type d -name "inference" -exec rm -r {} +
+
+
+## Reccurent errors when using simulation script in x-heep 
+
+1. 
+make[4]: *** No rule to make target '../linker/link.ld', needed by 'main.elf'.  Stop.
+You launch the simulation without running mcu-gen. 
+
+2.
+hjson not found 
+You ran apptainer run instead of apptainer shell -> the conda environment was not instanciated
+
+3. main.c not found
+make app XXX -> wrong app name 
