@@ -39,7 +39,8 @@ class SeedResult:
     mean: float
     stddev: float
     source_file: Path
-    seed_dir_name: str
+    seed: int
+    tpg_dir_name: str
 
 @dataclass
 class ArchGroup:
@@ -58,22 +59,26 @@ class ArchGroup:
 # -----------------------------
 class TPGResultsAggregator:
 
-    TPG_SEED_PATTERN = re.compile(r'_seed-\d+_')  # Option A: remove only when surrounded by underscores
+    # compile this regular expression into a regex object. Avoids re-compiling on each call.
+    TPG_SEED_PATTERN = re.compile(r'_seed-(\d+)_')  
 
     def __init__(self, root: str):
         self.root = Path(root).resolve()
 
-    def canonicalize_tpg_dir(self, dir_name: str) -> str:
+    def canonicalize_tpg_dir(self, tpg_dir_name: str) -> str:
         """
-        Apply Option A canonicalization:
-        - Remove the substring matching `_seed-<digits>_` if present.
+        - Remove the substring matching `_seed-<digits>_` from tpg_dir_name.
         - Collapse adjacent underscores and trim leading/trailing underscores.
         """
+        # find the seed
+        seed_match = self.TPG_SEED_PATTERN.search(tpg_dir_name).group(1)
+        seed = int(seed_match) if seed_match else None
+
         # Replace only occurrences of _seed-<number>_
-        new = self.TPG_SEED_PATTERN.sub('_', dir_name)
+        new = self.TPG_SEED_PATTERN.sub('_', tpg_dir_name)
         # collapse multiple underscores, strip edges
         new = re.sub(r'_+', '_', new).strip('_')
-        return new
+        return new, seed 
 
     def make_key(self, p: Path) -> str:
         parts = list(p.parts)
@@ -175,19 +180,15 @@ class TPGResultsAggregator:
             if minimal is None:
                 skipped += 1
                 continue
-            # Determine the tpg folder (parent of "inference")
-            # expected path .../<tpg_dir>/inference/results/file.json
-            # go up 3 levels to reach the TPG dir
             try:
-                # Correct path climbing:
-                # jf: .../tpg_dir/inference/results/file.json
-                tpg_dir = jf.parents[2]  # this is the TPG dir
+                # Determine the tpg folder associated to the json tpg_expe/training_results/<tpg_dir>/inference/results/file.json
+                tpg_dir = jf.parents[2]
             except Exception:
                 print(f"WARNING: Unexpected path structure for {jf}, skipping.", file=sys.stderr)
                 skipped += 1
                 continue
             tpg_dir_name = tpg_dir.name
-            canonical_tpg = self.canonicalize_tpg_dir(tpg_dir_name)
+            canonical_tpg, seed = self.canonicalize_tpg_dir(tpg_dir_name)
             simulator = minimal["simulator"]
             arch_key = simulator  # using simulator as architecture identifier
             # Initialize group if needed
@@ -204,7 +205,8 @@ class TPGResultsAggregator:
                 mean=minimal["tpg_mean_latency"],
                 stddev=minimal["tpg_stddev_latency"],
                 source_file=jf,
-                seed_dir_name=tpg_dir_name
+                seed = seed,
+                tpg_dir_name = tpg_dir_name
             )
             data[canonical_tpg][arch_key].seeds.append(seed_result)
         if skipped:
@@ -223,8 +225,14 @@ class TPGResultsAggregator:
                 if not seed_means:
                     continue
                 avg = float(mean(seed_means))
-                # population stddev for spread of means; if single seed -> 0.0
-                stddev = float(pstdev(seed_means)) if len(seed_means) > 1 else 0.0
+                
+                # stddev of latency means across seeds
+                #"mean_latency_stddev": stddev,
+                #stddev = float(pstdev(seed_means)) if len(seed_means) > 1 else 0.0
+
+                # mean of stddevs across seeds
+                stddevs = [s.stddev for s in group.seeds]
+                stddev = float(mean(stddevs)) if stddevs else 0.0
                 rows.append({
                     "tpg_config": tpg,
                     "arch_key": arch_key,
@@ -328,24 +336,18 @@ def main(argv: Optional[List[str]]=None):
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"INFO: Searching JSON CONFIG files under {root}/training_results/.../inference/configs/...")
     json_config_files = agg.find_json_files("configs")
-    print(f"INFO: found {len(json_config_files)} JSON CONFIG files")
+    print(f"{len(json_config_files)} Json config files")
 
-    print(f"INFO: Searching JSON RESULT files under {root}/training_results/.../inference/results/...")
     json_result_files = agg.find_json_files("results")
-    print(f"INFO: found {len(json_result_files)} JSON RESULT files")
-    
-    missing = agg.find_missing_results(json_config_files, json_result_files)
-    print(f"missing {len(missing)} result files for config files")
-
-    
+    print(f"{len(json_result_files)} Json result files")
+        
     data = agg.build_hierarchical_data(json_result_files)
     df = agg.aggregate_data(data)
-    # Save CSV
-    csv_path = out_dir / "aggregated_tpg_results.csv"
-    df.to_csv(csv_path, index=False)
-    print(f"INFO: saved aggregated CSV to {csv_path}")
+    # # Save CSV
+    # csv_path = out_dir / "aggregated_tpg_results.csv"
+    # df.to_csv(csv_path, index=False)
+    # print(f"INFO: saved aggregated CSV to {csv_path}")
 
 #     # Combined plot
 #     combined_png = out_dir / "combined_latency_by_tpg.png"
