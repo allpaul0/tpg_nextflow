@@ -18,6 +18,6 @@ process export_LE_states {
     echo "Exporting LE states for TPG model in ${expe_folder}"
 
     # run the exportLEstates in the Singularity container
-    apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-armlearn.sif /bin/bash -c "cd / && ./armlearn-wrapper/build/exportLEstates"
+    apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-armlearn.sif /bin/bash -c "cd / && cp armlearn-wrapper/params/AllTarget.csv /params/. && cp armlearn-wrapper/params/ValidationTrajectories.txt /params/. && ./armlearn-wrapper/build/exportLEstates && rm /params/AllTarget.csv /params/ValidationTrajectories.txt"
     """
 }
