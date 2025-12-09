@@ -153,6 +153,7 @@ class TPGResultsAggregator:
         except Exception as e:
             print(f"WARNING: Can't parse latency numbers in {path}: {e}", file=sys.stderr)
             return None
+
         # Normalized metadata values
         return {
             "simulator": str(data["simulator"]),
@@ -167,13 +168,12 @@ class TPGResultsAggregator:
     # Core pipeline
     # -----------------------------
 
-    def build_hierarchical_data(self, json_files: List[Path]) -> Dict[str, Dict[str, ArchGroup]]:
+    def build_hierarchical_data(self, json_files: List[Path]) -> Dict[str, Dict[Tuple[str, str], ArchGroup]]:
         """
-        Build data[tpg_config][arch_key] -> ArchGroup
-        arch_key is simulator name (can be extended).
-        seed_dir_name is the immediate parent directory name of the `inference` folder (i.e., the TPG+seed folder)
+        Build data[tpg_config][(uarch,isa)] -> ArchGroup
+        uarch is simulator name
         """
-        data: Dict[str, Dict[str, ArchGroup]] = defaultdict(dict)
+        data: Dict[str, Dict[Tuple[str, str], ArchGroup]] = defaultdict(dict)
         skipped = 0
         for jf in json_files:
             minimal = self.load_json_minimal(jf)
@@ -187,19 +187,29 @@ class TPGResultsAggregator:
                 print(f"WARNING: Unexpected path structure for {jf}, skipping.", file=sys.stderr)
                 skipped += 1
                 continue
+
             tpg_dir_name = tpg_dir.name
             canonical_tpg, seed = self.canonicalize_tpg_dir(tpg_dir_name)
+
             simulator = minimal["simulator"]
-            arch_key = simulator  # using simulator as architecture identifier
+            isa=minimal["isa"]
+            abi=minimal["abi"]
+            dtype=minimal["dtype"]
+
+            # tuple key 
+            uarch = simulator  
+            key = (uarch, isa)
+
             # Initialize group if needed
-            if arch_key not in data[canonical_tpg]:
-                data[canonical_tpg][arch_key] = ArchGroup(
+            if key not in data[canonical_tpg]:
+                data[canonical_tpg][key] = ArchGroup(
                     simulator=simulator,
-                    isa=minimal["isa"],
-                    abi=minimal["abi"],
-                    dtype=minimal["dtype"],
+                    isa=isa,
+                    abi=abi,
+                    dtype=dtype,
                     seeds=[]
                 )
+
             # Append seed result
             seed_result = SeedResult(
                 mean=minimal["tpg_mean_latency"],
@@ -208,42 +218,31 @@ class TPGResultsAggregator:
                 seed = seed,
                 tpg_dir_name = tpg_dir_name
             )
-            data[canonical_tpg][arch_key].seeds.append(seed_result)
+            data[canonical_tpg][key].seeds.append(seed_result)
+
         if skipped:
             print(f"INFO: skipped {skipped} files due to parse errors or unexpected structure", file=sys.stderr)
         return data
 
-    def aggregate_data(self, data: Dict[str, Dict[str, ArchGroup]]) -> pd.DataFrame:
+    def aggregate_data(self, data: Dict[str, Dict[Tuple[str, str], ArchGroup]]) -> pd.DataFrame:
         """
-        Aggregates by taking mean of seed means and stddev across those means (population std).
-        Returns a DataFrame with rows per (tpg_config, arch_key).
+        Aggregates data 
+        Returns a DataFrame with rows per (tpg_config, uarch, seed).
         """
         rows = []
         for tpg, arch_map in sorted(data.items()):
-            for arch_key, group in sorted(arch_map.items()):
-                seed_means = [s.mean for s in group.seeds]
-                if not seed_means:
-                    continue
-                avg = float(mean(seed_means))
-                
-                # stddev of latency means across seeds
-                #"mean_latency_stddev": stddev,
-                #stddev = float(pstdev(seed_means)) if len(seed_means) > 1 else 0.0
-
-                # mean of stddevs across seeds
-                stddevs = [s.stddev for s in group.seeds]
-                stddev = float(mean(stddevs)) if stddevs else 0.0
-                rows.append({
-                    "tpg_config": tpg,
-                    "arch_key": arch_key,
-                    "simulator": group.simulator,
-                    "isa": group.isa,
-                    "abi": group.abi,
-                    "dtype": group.dtype,
-                    "mean_latency_avg": avg,
-                    "mean_latency_stddev": stddev,
-                    "n_seeds": len(seed_means),
-                })
+            for key, group in sorted(arch_map.items()):
+                for seed in group.seeds:
+                    rows.append({
+                        "tpg_config": tpg,
+                        "uarch": key[0],
+                        "isa": group.isa,
+                        "abi": group.abi,
+                        "dtype": group.dtype,
+                        "seed": seed.seed,
+                        "tpg_mean_latency": seed.mean,
+                        "tpg_stddev_latency": seed.stddev
+                    })
         df = pd.DataFrame(rows)
         if df.empty:
             print("WARNING: aggregated DataFrame is empty", file=sys.stderr)
@@ -257,20 +256,20 @@ class TPGResultsAggregator:
         """
         Combined line+errorbar plot:
         - X axis: sorted TPG configs
-        - One line per architecture (arch_key)
+        - One line per architecture (uarch)
         """
         if df.empty:
             print("INFO: No data to plot", file=sys.stderr)
             return
-        # pivot table: index=tpg_config, columns=arch_key, values=mean_latency_avg
+        # pivot table: index=tpg_config, columns=uarch, values=mean_latency_avg
         tpgs = sorted(df["tpg_config"].unique())
-        archs = sorted(df["arch_key"].unique())
+        archs = sorted(df["uarch"].unique())
         # Build mapping for each arch: list of means in tpgs order, fill NaN for missing
         plot_df = pd.DataFrame(index=tpgs, columns=archs, dtype=float)
         plot_err = pd.DataFrame(index=tpgs, columns=archs, dtype=float)
         for _, row in df.iterrows():
-            plot_df.at[row["tpg_config"], row["arch_key"]] = row["mean_latency_avg"]
-            plot_err.at[row["tpg_config"], row["arch_key"]] = row["mean_latency_stddev"]
+            plot_df.at[row["tpg_config"], row["uarch"]] = row["mean_latency_avg"]
+            plot_err.at[row["tpg_config"], row["uarch"]] = row["mean_latency_stddev"]
         # Plot
         fig, ax = plt.subplots(figsize=(max(8, len(tpgs)*0.6), 6))
         x_pos = list(range(len(tpgs)))
@@ -303,7 +302,7 @@ class TPGResultsAggregator:
             fig, ax = plt.subplots(figsize=(8, max(4, len(sub)*0.4)))
             ax.bar(range(len(sub)), sub["mean_latency_avg"], yerr=sub["mean_latency_stddev"], capsize=4)
             ax.set_xticks(range(len(sub)))
-            ax.set_xticklabels(sub["arch_key"].tolist(), rotation=45, ha='right', fontsize=8)
+            ax.set_xticklabels(sub["uarch"].tolist(), rotation=45, ha='right', fontsize=8)
             ax.set_ylabel("Mean TPG latency (cycles)")
             ax.set_title(f"TPG: {tpg} (n_arch={len(sub)})")
             fig.tight_layout()
@@ -317,6 +316,16 @@ class TPGResultsAggregator:
     def sanitize_filename(s: str) -> str:
         """Make a safe filename from a string."""
         return re.sub(r'[^A-Za-z0-9._-]+', '_', s)[:200]
+
+"""
+# stddev of latency means across seeds
+#"mean_latency_stddev": stddev,
+#stddev = float(pstdev(seed_means)) if len(seed_means) > 1 else 0.0
+
+#mean of stddevs across seeds
+stddevs = [s.stddev for s in group.seeds]
+stddev = float(mean(stddevs)) if stddevs else 0.0
+"""
 
 # -----------------------------
 # CLI / main
@@ -332,7 +341,6 @@ def main(argv: Optional[List[str]]=None):
 
     agg = TPGResultsAggregator(args.root)
 
-    root = Path(args.root).resolve()
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -344,23 +352,24 @@ def main(argv: Optional[List[str]]=None):
         
     data = agg.build_hierarchical_data(json_result_files)
     df = agg.aggregate_data(data)
-    # # Save CSV
-    # csv_path = out_dir / "aggregated_tpg_results.csv"
-    # df.to_csv(csv_path, index=False)
-    # print(f"INFO: saved aggregated CSV to {csv_path}")
 
-#     # Combined plot
-#     combined_png = out_dir / "combined_latency_by_tpg.png"
-#     plot_combined(df, combined_png)
-#     print(f"INFO: saved combined plot to {combined_png}")
+    # Save CSV
+    csv_path = out_dir / "aggregated_tpg_results.csv"
+    df.to_csv(csv_path, index=False)
+    print(f"Saved aggregated CSV to {csv_path}")
 
-#     if args.save_per_tpg:
-#         plot_per_tpg_bar(df, out_dir, max_plots=args.max_per_tpg)
-#         print(f"INFO: saved up to {args.max_per_tpg} per-TPG plots in {out_dir}")
+    # Combined plot
+    # combined_png = out_dir / "combined_latency_by_tpg.png"
+    # plot_combined(df, combined_png)
+    # print(f"INFO: saved combined plot to {combined_png}")
+
+    # if args.save_per_tpg:
+    #     plot_per_tpg_bar(df, out_dir, max_plots=args.max_per_tpg)
+    #     print(f"INFO: saved up to {args.max_per_tpg} per-TPG plots in {out_dir}")
 
 #     # quick summary printed
 #     n_tpgs = df["tpg_config"].nunique() if not df.empty else 0
-#     n_archs = df["arch_key"].nunique() if not df.empty else 0
+#     n_archs = df["uarch"].nunique() if not df.empty else 0
 #     print(f"SUMMARY: TPGs={n_tpgs}, architectures={n_archs}, total_rows={len(df)}")
 
 # scripts/aggregate_tpg_results.py --root tpg_expe --out results_out
