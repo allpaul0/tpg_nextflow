@@ -9,6 +9,7 @@ nextflow.enable.dsl=2
 
 workflow {
     def ch_trained_TPGs = Channel.fromPath(params.trained_TPGs_path, type: 'dir')
+    //.filter{ dir ->dir.resolve("outLogs/codegen").exists()}
 
     generated_codes = generate_code(ch_trained_TPGs)
 
