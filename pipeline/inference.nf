@@ -2,7 +2,7 @@
 
 nextflow.enable.dsl=2
 
-// include { inference_simulator } from "./process/inference_simulator.nf"
+include { inference_simulator } from "./process/inference_simulator.nf"
 include { generate_TPG_ISA_UARCH_configs } from "./process/generate_TPG_ISA_UARCH_configs.nf"
 include { find_missing_inference_results_nf } from "./process/find_missing_inference_results_nf.nf"
 
@@ -20,11 +20,6 @@ workflow {
 
         // Channel of prepared TPG folders
         def ch_prepared_TPGs = Channel.fromPath(params.prepared_TPGs_path, type: 'dir')
-
-        if (params.mini_config != 0) {
-            println "Using mini configuration for testing purposes..."
-            ch_prepared_TPGs = ch_prepared_TPGs.take(params.mini_config)
-        }
 
         // Generate JSON configs using Python
         def ch_configs = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs)
@@ -68,11 +63,15 @@ workflow {
             .filter { it != null }     // remove any nulls produced by blank lines
     }
 
+    if (params.mini_config != 0) {
+        ch_TPG_JSONs = ch_TPG_JSONs.take(params.mini_config)
+    }
+
     // display the JSONs found
     ch_TPG_JSONs.view { t -> "Found TPG JSON config: ${t[1]} in folder ${t[0]}" }
     // count the number of JSON configs to process
     ch_TPG_JSONs.count().view { c -> "Total number of TPG JSON configs to process: ${c}" }
 
     // Run inference simulator for each JSON config
-    //inference_simulator(ch_TPG_JSONs)
+    inference_simulator(ch_TPG_JSONs)
 }
