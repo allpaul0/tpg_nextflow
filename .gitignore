@@ -10,3 +10,13 @@ tmp*/*
 *.out
 *.html
 
+#venv and caches
+pipeline/scripts/__pycache__/
+.venv/
+
+# results dir
+tpg_expe/
+
+# github projects
+x-heep/
+armlearn-wrapper/
