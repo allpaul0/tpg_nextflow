@@ -49,6 +49,7 @@ class ArchGroup:
     abi: str
     dtype: str
     seeds: List[SeedResult]
+    tpg_nickname: str
 
 # -----------------------------
 # Helpers
@@ -64,6 +65,18 @@ class TPGResultsAggregator:
 
     def __init__(self, root: str):
         self.root = Path(root).resolve()
+
+    def reverse_replace_xpulp_extensions(self, isa: str) -> str:
+        """
+        Replace
+        '_xcvalu_xcvbi_xcvbitmanip_xcvhwlp_xcvmac_xcvmem_xcvsimd' with '_xpulp' 
+        """
+        XPULP_EXT = "_xcvalu_xcvbi_xcvbitmanip_xcvhwlp_xcvmac_xcvmem_xcvsimd"
+
+        if XPULP_EXT in isa:
+            return isa.replace(XPULP_EXT, "_xpulp",)
+
+        return isa
 
     def canonicalize_tpg_dir(self, tpg_dir_name: str) -> str:
         """
@@ -154,15 +167,60 @@ class TPGResultsAggregator:
             print(f"WARNING: Can't parse latency numbers in {path}: {e}", file=sys.stderr)
             return None
 
+        isa = self.reverse_replace_xpulp_extensions(str(data["isa"]))
+
         # Normalized metadata values
         return {
             "simulator": str(data["simulator"]),
-            "isa": str(data["isa"]),
+            "isa": isa,
             "abi": str(data["abi"]),
             "dtype": str(data["dtype"]),
             "tpg_mean_latency": mean_val,
             "tpg_stddev_latency": std_val,
         }
+    
+    def assign_nickname(self, canonical_tpg: str) -> str:
+        """
+        Produce a compact nickname from a canonical TPG directory string.
+        Patterns handled:
+        A) Trig / LogExp / ExpensiveArithmetic / Comparison
+        B) Log2Exp2 + Zmmul variant (Trig=False, LogExp=False)
+        """
+
+        def extract_flag(name: str) -> Optional[int]:
+            m = re.search(rf"{name}-(True|False)", canonical_tpg)
+            if not m:
+                return None
+            return 1 if m.group(1) == "True" else 0
+
+        # Dtype
+        dtype_m = re.search(r"instrType-(double|float|fixedpt)", canonical_tpg)
+        dtype = dtype_m.group(1) if dtype_m else "unk"
+
+        # Detect variant B (Log2Exp2/Zmmul)
+        log2_m = re.search(r"useInstrLog2Exp2-(True|False)", canonical_tpg)
+        zmmul_m = re.search(r"useInstrZmmul-(True|False)", canonical_tpg)
+
+        if log2_m or zmmul_m:
+            # B-pattern nickname
+            #l2e2 = 1 if (log2_m and log2_m.group(1) == "True") else 0
+            #zmu = 1 if (zmmul_m and zmmul_m.group(1) == "True") else 0
+            l2e2 = extract_flag("useInstrLog2Exp2") or 0
+            zmu = extract_flag("useInstrZmmul") or 0
+            expari = extract_flag("useInstrExpensiveArithmetic") or 0
+            #cmpf = extract_flag("useInstrComparison") or 0
+
+            #return f"l2e2{l2e2}_zmu{zmu}_expari{expari}_cmp{cmpf}_{dtype}"
+            return f"l2e2{l2e2}_zmu{zmu}_expari{expari}-{dtype}"
+
+        # Default A-pattern nickname
+        trig = extract_flag("useInstrTrig") or 0
+        logexp = extract_flag("useInstrLogExp") or 0
+        expari = extract_flag("useInstrExpensiveArithmetic") or 0
+        #cmpf = extract_flag("useInstrComparison") or 0
+
+        #return f"trig{trig}_logexp{logexp}_expari{expari}_cmp{cmpf}_{dtype}"
+        return f"trig{trig}_logexp{logexp}_expari{expari}-{dtype}"
 
     # -----------------------------
     # Core pipeline
@@ -195,6 +253,7 @@ class TPGResultsAggregator:
             isa=minimal["isa"]
             abi=minimal["abi"]
             dtype=minimal["dtype"]
+            nickname = self.assign_nickname(canonical_tpg)
 
             # tuple key 
             uarch = simulator  
@@ -207,7 +266,8 @@ class TPGResultsAggregator:
                     isa=isa,
                     abi=abi,
                     dtype=dtype,
-                    seeds=[]
+                    seeds=[],
+                    tpg_nickname=nickname
                 )
 
             # Append seed result
@@ -234,7 +294,8 @@ class TPGResultsAggregator:
             for key, group in sorted(arch_map.items()):
                 for seed in group.seeds:
                     rows.append({
-                        "tpg_config": tpg,
+                        #"tpg_config": tpg,
+                        "tpg_nickname": group.tpg_nickname,
                         "uarch": key[0],
                         "isa": group.isa,
                         "abi": group.abi,
@@ -248,72 +309,100 @@ class TPGResultsAggregator:
             print("WARNING: aggregated DataFrame is empty", file=sys.stderr)
         return df
 
+    def aggregate_averaged_data(self, data):
+        """
+        Build a dataframe with one row per (tpg_config, uarch).
+        mean_latency_avg  = mean of seed.means
+        mean_latency_stddev = mean of seed.stddevs
+        """
+        rows = []
+        for tpg, arch_map in data.items():
+            for (uarch, isa), group in arch_map.items():
+                seed_means = [s.mean for s in group.seeds]
+                seed_stddevs = [s.stddev for s in group.seeds]
+
+                if not seed_means:
+                    continue
+
+                mean_latency_avg = round(float(mean(seed_means)), 2)
+                mean_latency_stddev = round(float(mean(seed_stddevs)), 2) if seed_stddevs else 0.0
+
+                rows.append({
+                    #"tpg_config": tpg,
+                    "tpg_nickname": group.tpg_nickname,
+                    "uarch": uarch,
+                    "isa": group.isa,
+                    "abi": group.abi,
+                    "dtype": group.dtype,
+                    "mean_latency_avg": mean_latency_avg,
+                    "mean_latency_stddev": mean_latency_stddev,
+                })
+        return pd.DataFrame(rows)
+
+
     # -----------------------------
     # Plotting
     # -----------------------------
 
-    def plot_combined(df: pd.DataFrame, out_path: Path) -> None:
+    # === PLOT A: best architectures per TPG ===
+    def plot_best_per_tpg(self, df, out_dir):
         """
-        Combined line+errorbar plot:
-        - X axis: sorted TPG configs
-        - One line per architecture (uarch)
+        One plot per TPG, showing best architectures (uarch+isa) sorted by latency.
         """
-        if df.empty:
-            print("INFO: No data to plot", file=sys.stderr)
-            return
-        # pivot table: index=tpg_config, columns=uarch, values=mean_latency_avg
-        tpgs = sorted(df["tpg_config"].unique())
-        archs = sorted(df["uarch"].unique())
-        # Build mapping for each arch: list of means in tpgs order, fill NaN for missing
-        plot_df = pd.DataFrame(index=tpgs, columns=archs, dtype=float)
-        plot_err = pd.DataFrame(index=tpgs, columns=archs, dtype=float)
-        for _, row in df.iterrows():
-            plot_df.at[row["tpg_config"], row["uarch"]] = row["mean_latency_avg"]
-            plot_err.at[row["tpg_config"], row["uarch"]] = row["mean_latency_stddev"]
-        # Plot
-        fig, ax = plt.subplots(figsize=(max(8, len(tpgs)*0.6), 6))
-        x_pos = list(range(len(tpgs)))
-        for arch in archs:
-            y = plot_df[arch].tolist()
-            yerr = plot_err[arch].tolist()
-            # Convert None/NaN to numpy.nan so matplotlib handles gaps
-            ax.errorbar(x_pos, y, yerr=yerr, marker='o', linestyle='-', label=arch, capsize=3)
-        ax.set_xticks(x_pos)
-        ax.set_xticklabels(tpgs, rotation=45, ha='right', fontsize=8)
-        ax.set_xlabel("TPG configuration")
-        ax.set_ylabel("Mean TPG latency (cycles)")
-        ax.set_title("TPG mean latency by TPG config and microarchitecture")
-        ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1.0))
-        fig.tight_layout()
-        fig.savefig(out_path, dpi=200)
-        plt.close(fig)
-
-    def plot_per_tpg_bar(df: pd.DataFrame, out_dir: Path, max_plots: int = 20) -> None:
-        """
-        Create per-TPG bar plots comparing architectures for that TPG.
-        Limit number of plots to avoid huge output.
-        """
-        tpgs = sorted(df["tpg_config"].unique())
-        made = 0
+        tpgs = sorted(df["tpg_nickname"].unique())
         for tpg in tpgs:
-            sub = df[df["tpg_config"] == tpg].sort_values(by="mean_latency_avg")
+            sub = df[df["tpg_nickname"] == tpg].copy()
             if sub.empty:
                 continue
-            fig, ax = plt.subplots(figsize=(8, max(4, len(sub)*0.4)))
-            ax.bar(range(len(sub)), sub["mean_latency_avg"], yerr=sub["mean_latency_stddev"], capsize=4)
-            ax.set_xticks(range(len(sub)))
-            ax.set_xticklabels(sub["uarch"].tolist(), rotation=45, ha='right', fontsize=8)
-            ax.set_ylabel("Mean TPG latency (cycles)")
-            ax.set_title(f"TPG: {tpg} (n_arch={len(sub)})")
-            fig.tight_layout()
-            out_file = out_dir / f"per_tpg_{sanitize_filename(tpg)}.png"
-            fig.savefig(out_file, dpi=200)
-            plt.close(fig)
-            made += 1
-            if made >= max_plots:
-                break
 
-    def sanitize_filename(s: str) -> str:
+            sub["label"] = sub["uarch"] + " | " + sub["isa"]
+            sub = sub.sort_values("mean_latency_avg")
+
+            fig, ax = plt.subplots(figsize=(9, max(4, len(sub)*0.4)))
+            x_pos = range(len(sub))
+            y = sub["mean_latency_avg"].tolist()
+            yerr = sub["mean_latency_stddev"].tolist()
+            ax.errorbar(x_pos, y, yerr=yerr, fmt='o', capsize=4, markersize=6, linestyle='None', color='C0')
+            ax.set_xticks(x_pos)
+            ax.set_xticklabels(sub["label"], rotation=45, ha="right", fontsize=8)
+            ax.set_ylabel("Mean latency (cycles)")
+            ax.set_title(f"Best architectures for TPG: {tpg}")
+            fig.tight_layout()
+
+            filename = f"best_arch_for_tpg_{self.sanitize_filename(tpg)}.png"
+            fig.savefig(out_dir / filename, dpi=200)
+            plt.close(fig)
+
+    # === PLOT B: best TPG/ISA per Architecture ===
+    def plot_best_per_arch(self, df, out_dir):
+        """
+        One plot per architecture, showing best (TPG, ISA).
+        """
+        archs = sorted(df["uarch"].unique())
+        for arch in archs:
+            sub = df[df["uarch"] == arch].copy()
+            if sub.empty:
+                continue
+
+            sub["label"] = sub["tpg_nickname"] + " | " + sub["isa"]
+            sub = sub.sort_values("mean_latency_avg")
+
+            fig, ax = plt.subplots(figsize=(9, max(4, len(sub)*0.4)))
+            x_pos = range(len(sub))
+            y = sub["mean_latency_avg"].tolist()
+            yerr = sub["mean_latency_stddev"].tolist()
+            ax.errorbar(x_pos, y, yerr=yerr, fmt='o', capsize=4, markersize=6, linestyle='None', color='C1')
+            ax.set_xticks(x_pos)
+            ax.set_xticklabels(sub["label"], rotation=45, ha="right", fontsize=8)
+            ax.set_ylabel("Mean latency (cycles)")
+            ax.set_title(f"Best TPG/ISA combinations for architecture: {arch}")
+            fig.tight_layout()
+
+            filename = f"best_tpg_for_arch_{self.sanitize_filename(arch)}.png"
+            fig.savefig(out_dir / filename, dpi=200)
+            plt.close(fig)
+
+    def sanitize_filename(self, s: str) -> str:
         """Make a safe filename from a string."""
         return re.sub(r'[^A-Za-z0-9._-]+', '_', s)[:200]
 
@@ -352,19 +441,27 @@ def main(argv: Optional[List[str]]=None):
         
     data = agg.build_hierarchical_data(json_result_files)
     df = agg.aggregate_data(data)
+    df2 = agg.aggregate_averaged_data(data)
 
     # Save CSV
     csv_path = out_dir / "aggregated_tpg_results.csv"
     df.to_csv(csv_path, index=False)
     print(f"Saved aggregated CSV to {csv_path}")
 
-    # Combined plot
+    csv_path2 = out_dir / "aggregated_averaged_tpg_results.csv"
+    df2.to_csv(csv_path2, index=False)
+    print(f"Saved aggregated CSV to {csv_path2}")
+
+    agg.plot_best_per_tpg(df2, out_dir)
+    agg.plot_best_per_arch(df2, out_dir)
+
+    # Combined plot
     # combined_png = out_dir / "combined_latency_by_tpg.png"
-    # plot_combined(df, combined_png)
+    # agg.plot_combined(df, combined_png)
     # print(f"INFO: saved combined plot to {combined_png}")
 
     # if args.save_per_tpg:
-    #     plot_per_tpg_bar(df, out_dir, max_plots=args.max_per_tpg)
+    #     agg.plot_per_tpg_bar(df, out_dir, max_plots=args.max_per_tpg)
     #     print(f"INFO: saved up to {args.max_per_tpg} per-TPG plots in {out_dir}")
 
 #     # quick summary printed
