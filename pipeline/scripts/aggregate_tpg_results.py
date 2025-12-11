@@ -421,22 +421,20 @@ class TPGResultsAggregator:
             # no_c_isa, c_isa 
             return isa1, isa2
 
-    # === PLOT A: best architectures per TPG ===
-    def plot_best_per_tpg(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
+    # === PLOT A: best architectures for a given TPG ===
+    def plot_best_uarch_per_tpg(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
         """
         Generate one figure per TPG.
-        X-axis: uarch
+        X-axis: uarch | ISA
         Y-axis: log-scale latency
         Points: mean latency, error bars = stddev
-        Two ISAs per uarch: color red for without 'c' extension, blue for with 'c'
+        Two ISAs per uarch: red = compressed ISA ('c' extension), blue = base ISA (without 'c')
         """
 
         for tpg, uarch_map in data.items():
 
-            # fetch nickname from any group under this TPG
+            # fetch nickname from any group under this TPG
             try:
-                # get first element from uarch_map dict -> isa_map
-                # get first element from isa_map dict -> Archgroup
                 sample_group = next(iter(next(iter(uarch_map.values())).values()))
                 tpg_nickname = sample_group.tpg_nickname
             except Exception:
@@ -444,14 +442,13 @@ class TPGResultsAggregator:
 
             fig, ax = plt.subplots(figsize=(14, 6), constrained_layout=True)
             ax.set_title(f"Latency per uarch for TPG: {tpg_nickname}")
-            ax.set_xlabel("uarch")
+            ax.set_xlabel("uarch | ISA")
             ax.set_ylabel("Latency CC")
             ax.set_yscale("log")
 
             uarchs_sorted = sorted(uarch_map.keys())
-            x_ticks = range(len(uarchs_sorted))
-            ax.set_xticks(x_ticks)
-            ax.set_xticklabels(uarchs_sorted, rotation=45, ha="right")
+            x_ticks = []
+            x_labels = []
 
             for xi, uarch in enumerate(uarchs_sorted):
                 isa_map = uarch_map[uarch]
@@ -462,8 +459,8 @@ class TPGResultsAggregator:
                 isa_list = list(isa_map.keys())
                 no_c_isa, with_c_isa = self.is_c_extension(isa_list[0], isa_list[1])
 
-                # Plot each ISA
-                for isa, color in zip([no_c_isa, with_c_isa], ["red", "blue"]):
+                # Superimpose base and compressed ISA
+                for isa, color, label in zip([no_c_isa, with_c_isa], ["red", "blue"], ["base_isa", "compressed_isa"]):
                     group = isa_map[isa]
                     seed_means = [s.mean for s in group.seeds]
                     seed_stddevs = [s.stddev for s in group.seeds]
@@ -478,12 +475,21 @@ class TPGResultsAggregator:
                         fmt="o",
                         color=color,
                         capsize=5,
-                        label=f"{isa}"  # label for legend
+                        label=label
                     )
 
-            # Only show each ISA in legend once
+                # X-axis label as "uarch | ISA"
+                x_ticks.append(xi)
+                x_labels.append(f"{uarch} | {no_c_isa}")#/{with_c_isa}
+
+            ax.set_xticks(x_ticks)
+            ax.set_xticklabels(x_labels, rotation=45, ha="right")
+
+            # Only show base/compressed ISA in legend once
             handles, labels = ax.get_legend_handles_labels()
-            by_label = dict(zip(labels, handles))
+            by_label = {}
+            for h, l in zip(handles, labels):
+                by_label[l] = h
             ax.legend(
                 by_label.values(),
                 by_label.keys(),
@@ -497,8 +503,7 @@ class TPGResultsAggregator:
             fig.savefig(fig_path)
             plt.close(fig)
             print(f"Saved plot for TPG {tpg_nickname} to {fig_path}")
-    
-    def plot_best_per_uarch(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
+    def plot_best_tpg_per_uarch(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
         """
         Generate one figure per uarch.
         X-axis: TPG (nickname)
@@ -544,7 +549,6 @@ class TPGResultsAggregator:
             # X-axis = TPG nicknames
             x_ticks = range(len(tpgs_with_uarch))
             ax.set_xticks(x_ticks)
-
             ax.set_xticklabels(tpg_nicknames, rotation=45, ha="right")
 
             # --- Plot each TPG
@@ -632,8 +636,8 @@ def main(argv: Optional[List[str]]=None):
     agg.save_csv(df, "aggregated_tpg_results.csv")
     agg.save_csv(df_avg, "aggregated_averaged_tpg_results.csv")
 
-    agg.plot_best_per_tpg(data)
-    agg.plot_best_per_uarch(data)
+    agg.plot_best_uarch_per_tpg(data)
+    agg.plot_best_tpg_per_uarch(data)
 
     # Combined plot
     # combined_png = out_dir / "combined_latency_by_tpg.png"
