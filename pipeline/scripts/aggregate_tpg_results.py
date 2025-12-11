@@ -44,12 +44,13 @@ class SeedResult:
 
 @dataclass
 class ArchGroup:
+    tpg_canonical: str
     simulator: str
     isa: str
     abi: str
+    iset: str
     dtype: str
     seeds: List[SeedResult]
-    tpg_nickname: str
 
 # -----------------------------
 # Helpers
@@ -181,46 +182,89 @@ class TPGResultsAggregator:
             "tpg_stddev_latency": std_val,
         }
     
-    def assign_tpg_nickname(self, canonical_tpg: str) -> str:
+    def assign_iset_function_nickname(self, tpg_canonical: str) -> str:
         """
-        Produce a compact nickname from a canonical TPG directory string.
+        Produce a compact iset from a canonical TPG directory string.
         Patterns handled:
         A) Trig / LogExp / ExpensiveArithmetic / Comparison
         B) Log2Exp2 + Zmmul variant (Trig=False, LogExp=False)
         """
 
         def extract_flag(name: str) -> Optional[int]:
-            m = re.search(rf"{name}-(True|False)", canonical_tpg)
+            m = re.search(rf"{name}-(True|False)", tpg_canonical)
             if not m:
                 return None
             return 1 if m.group(1) == "True" else 0
 
         # Dtype
-        dtype_m = re.search(r"instrType-(double|float|fixedpt)", canonical_tpg)
+        dtype_m = re.search(r"instrType-(double|float|fixedpt)", tpg_canonical)
         dtype = dtype_m.group(1) if dtype_m else "unk"
 
         # Detect variant B (Log2Exp2/Zmmul)
-        log2_m = re.search(r"useInstrLog2Exp2-(True|False)", canonical_tpg)
-        zmmul_m = re.search(r"useInstrZmmul-(True|False)", canonical_tpg)
+        log2_m = re.search(r"useInstrLog2Exp2-(True|False)", tpg_canonical)
+        zmmul_m = re.search(r"useInstrZmmul-(True|False)", tpg_canonical)
 
         if log2_m or zmmul_m:
-            # B-pattern nickname
+            # B-pattern iset
             l2e2 = 1 if (log2_m and log2_m.group(1) == "True") else 0
             zmu = 1 if (zmmul_m and zmmul_m.group(1) == "True") else 0
             expari = extract_flag("useInstrExpensiveArithmetic") or 0
             #cmpf = extract_flag("useInstrComparison") or 0
 
             #return f"l2e2{l2e2}_zmu{zmu}_expari{expari}_cmp{cmpf}_{dtype}"
-            return f"l2e2{l2e2}_zmu{zmu}_expari{expari}-{dtype}"
+            return f"l2e2{l2e2}_zmu{zmu}_expari{expari}"
 
-        # Default A-pattern nickname
+        # Default A-pattern iset
         trig = extract_flag("useInstrTrig") or 0
         logexp = extract_flag("useInstrLogExp") or 0
         expari = extract_flag("useInstrExpensiveArithmetic") or 0
         #cmpf = extract_flag("useInstrComparison") or 0
 
         #return f"trig{trig}_logexp{logexp}_expari{expari}_cmp{cmpf}_{dtype}"
-        return f"trig{trig}_logexp{logexp}_expari{expari}-{dtype}"
+        return f"trig{trig}_logexp{logexp}_expari{expari}"
+
+    def assign_iset_operator_nickname(self, tpg_canonical: str) -> str:
+        """ 
+        Produce a compact iset from a canonical TPG directory string. 
+        Patterns handled: A) Trig / LogExp / ExpensiveArithmetic / Comparison 
+        B) Log2Exp2 + Zmmul variant (Trig=False, LogExp=False) 
+        """
+        def extract_flag(name: str) -> Optional[int]:
+            m = re.search(rf"{name}-(True|False)", tpg_canonical)
+            return 1 if (m and m.group(1) == "True") else 0
+
+        # detect B-pattern
+        log2_m = extract_flag("useInstrLog2Exp2")
+        zmmul_m = extract_flag("useInstrZmmul")
+
+        is_B = (log2_m == 1 or zmmul_m == 1)
+
+        if is_B:
+            ops = []
+            if log2_m == 1:
+                ops.append("log2,exp2")
+            if extract_flag("useInstrExpensiveArithmetic"):
+                ops.append("*,/")
+            if zmmul_m == 1:
+                ops.append("*")
+            ops.append(">,-,+")
+            return "{" + ",".join(ops) + "}"
+
+        # A-pattern
+        trig = extract_flag("useInstrTrig")
+        logexp = extract_flag("useInstrLogExp")
+        expari = extract_flag("useInstrExpensiveArithmetic")
+
+        ops = []
+        if trig:
+            ops.append("sin,cos,tan")
+        if logexp:
+            ops.append("log,exp") #log,exp
+        if expari:
+            ops.append("*,/")
+        ops.append(">,-,+")
+        return "{" + ",".join(ops) + "}"
+
 
     def assign_isa_nickname(self, isa: str) -> str:
 
@@ -233,36 +277,36 @@ class TPGResultsAggregator:
         """
         Produce a compact nickname from a simulator string.
         Patterns handled:
-        cv32e20 -> S2 
-        cv32e40 -> S4
+        cv32e20 -> s2 
+        cv32e40 -> s4
         ! Attention à l'ordre des règles !
         """
         
-        simulator = simulator.replace("cv32e20", "S2") # simplifie
-        simulator = simulator.replace("cv32e40", "S4") # simplifie
+        simulator = simulator.replace("cv32e20", "s2") # simplifie
+        simulator = simulator.replace("cv32e40", "s4") # simplifie
         simulator = simulator.replace("corev_pulp", "pulp") # simplifie
                
-        # S4x_i-em0,1,2 -> renommage
-        simulator = simulator.replace("S4x_im0", "S4x_im0d2") # ajoute div
-        simulator = simulator.replace("S4x_im1", "S4x_im4d2") # change mult -> basé ressources, ajoute div
-        simulator = simulator.replace("S4x_im2", "S4x_im4d0") # change mult -> basé ressources, ajoute div
+        # s4x_i-em0,1,2 -> renommage
+        simulator = simulator.replace("s4x_im0", "s4x_im0d2") # ajoute div
+        simulator = simulator.replace("s4x_im1", "s4x_im4d2") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("s4x_im2", "s4x_im4d0") # change mult -> basé ressources, ajoute div
 
-        simulator = simulator.replace("S4x_em0", "S4x_em0d2") # ajoute div
-        simulator = simulator.replace("S4x_em1", "S4x_em4d2") # change mult -> basé ressources, ajoute div
-        simulator = simulator.replace("S4x_em2", "S4x_em4d0") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("s4x_em0", "s4x_em0d2") # ajoute div
+        simulator = simulator.replace("s4x_em1", "s4x_em4d2") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("s4x_em2", "s4x_em4d0") # change mult -> basé ressources, ajoute div
 
-        simulator = simulator.replace("S4px", "S4x_im4d2") # ajout mult -> basé ressources
+        simulator = simulator.replace("s4px", "s4x_im4d2") # ajout mult -> basé ressources
 
-        # S2_i-em0-3 -> add div
-        simulator = simulator.replace("S2_im0", "S2_im0d1")
-        simulator = simulator.replace("S2_im1", "S2_im1d1")
-        simulator = simulator.replace("S2_im2", "S2_im2d1")
-        simulator = simulator.replace("S2_im3", "S2_im3d1")
+        # s2_i-em0-3 -> add div
+        simulator = simulator.replace("s2_im0", "s2_im0d1")
+        simulator = simulator.replace("s2_im1", "s2_im1d1")
+        simulator = simulator.replace("s2_im2", "s2_im2d1")
+        simulator = simulator.replace("s2_im3", "s2_im3d1")
 
-        simulator = simulator.replace("S2_em0", "S2_em0d1")
-        simulator = simulator.replace("S2_em1", "S2_em1d1")
-        simulator = simulator.replace("S2_em2", "S2_em2d1")
-        simulator = simulator.replace("S2_em3", "S2_em3d1")
+        simulator = simulator.replace("s2_em0", "s2_em0d1")
+        simulator = simulator.replace("s2_em1", "s2_em1d1")
+        simulator = simulator.replace("s2_em2", "s2_em2d1")
+        simulator = simulator.replace("s2_em3", "s2_em3d1")
 
         simulator = simulator.replace("px", "") # rassemble px, x
         simulator = simulator.replace("x", "") # rassemble px, x
@@ -297,26 +341,27 @@ class TPGResultsAggregator:
                 continue
 
             tpg_dir_name = tpg_dir.name
-            canonical_tpg, seed = self.canonicalize_tpg_dir(tpg_dir_name)
+            tpg_canonical, seed = self.canonicalize_tpg_dir(tpg_dir_name)
 
             simulator = minimal["simulator"]
             isa=minimal["isa"]
             abi=minimal["abi"]
             dtype=minimal["dtype"]
 
-            tpg_nickname = self.assign_tpg_nickname(canonical_tpg)
+            iset = self.assign_iset_operator_nickname(tpg_canonical)
             simulator_nickname = self.assign_simulator_nickname(simulator)
             isa_nickname = self.assign_isa_nickname(isa)
  
             # Initialize group if needed
-            if isa_nickname not in data[tpg_nickname][simulator_nickname]:
-                data[tpg_nickname][simulator_nickname][isa_nickname] = ArchGroup(
+            if isa_nickname not in data[iset][simulator_nickname]:
+                data[iset][simulator_nickname][isa_nickname] = ArchGroup(
+                    tpg_canonical=tpg_canonical,
                     simulator=simulator_nickname,
                     isa=isa_nickname,
                     abi=abi,
+                    iset=iset,
                     dtype=dtype,
                     seeds=[],
-                    tpg_nickname=tpg_nickname
                 )
 
             # Append seed result
@@ -327,7 +372,7 @@ class TPGResultsAggregator:
                 seed = seed,
                 tpg_dir_name = tpg_dir_name
             )
-            data[tpg_nickname][simulator_nickname][isa_nickname].seeds.append(seed_result)
+            data[iset][simulator_nickname][isa_nickname].seeds.append(seed_result)
 
         if skipped:
             print(f"INFO: skipped {skipped} files due to parse errors or unexpected structure", file=sys.stderr)
@@ -345,11 +390,11 @@ class TPGResultsAggregator:
                     for seed in group.seeds:
                         rows.append({
                             #"tpg_config": tpg,
-                            "tpg_nickname": group.tpg_nickname,
+                            "iset": group.iset,
+                            "dtype": group.dtype,
                             "uarch": uarch,
                             "isa": isa,
                             "abi": group.abi,
-                            "dtype": group.dtype,
                             "seed": seed.seed,
                             "tpg_mean_latency": seed.mean,
                             "tpg_stddev_latency": seed.stddev
@@ -388,11 +433,11 @@ class TPGResultsAggregator:
 
                     rows.append({
                         #"tpg_config": tpg,
-                        "tpg_nickname": group.tpg_nickname,
+                        "iset": group.iset,
+                        "dtype": group.dtype,
                         "uarch": uarch,
                         "isa": isa,
                         "abi": group.abi,
-                        "dtype": group.dtype,
                         "mean_latency_avg": mean_latency_avg,
                         "mean_latency_stddev": mean_latency_stddev,
                     })
@@ -430,19 +475,27 @@ class TPGResultsAggregator:
         Points: mean latency, error bars = stddev
         Two ISAs per uarch: red = compressed ISA ('c' extension), blue = base ISA (without 'c')
         """
+        USE_UARCH_ISA = False
 
         for tpg, uarch_map in data.items():
 
-            # fetch nickname from any group under this TPG
+            # fetch tpg informations from any group under this TPG
             try:
                 sample_group = next(iter(next(iter(uarch_map.values())).values()))
-                tpg_nickname = sample_group.tpg_nickname
+                iset = sample_group.iset
+                dtype = sample_group.dtype
+                tpg_canonical = sample_group.tpg_canonical
             except Exception:
-                tpg_nickname = tpg
+                iset = ""
+                dtype = ""
+                tpg_canonical = tpg
 
             fig, ax = plt.subplots(figsize=(14, 6), constrained_layout=True)
-            ax.set_title(f"Latency per uarch for TPG: {tpg_nickname}")
-            ax.set_xlabel("uarch | ISA")
+            ax.set_title(f"Latency per uarch for TPG: {iset} {dtype}")
+            if (USE_UARCH_ISA):
+                ax.set_xlabel("uarch | isa")
+            else:
+                ax.set_xlabel("uarch")
             ax.set_ylabel("Latency CC")
             ax.set_yscale("log")
 
@@ -450,6 +503,7 @@ class TPGResultsAggregator:
             x_ticks = []
             x_labels = []
 
+            # get the isa for dic[tpg][uarch]
             for xi, uarch in enumerate(uarchs_sorted):
                 isa_map = uarch_map[uarch]
                 if len(isa_map) != 2:
@@ -460,7 +514,7 @@ class TPGResultsAggregator:
                 no_c_isa, with_c_isa = self.is_c_extension(isa_list[0], isa_list[1])
 
                 # Superimpose base and compressed ISA
-                for isa, color, label in zip([no_c_isa, with_c_isa], ["red", "blue"], ["base_isa", "compressed_isa"]):
+                for isa, marker, label in zip([no_c_isa, with_c_isa], ["o", "x"], ["base_isa", "compressed_isa"]):
                     group = isa_map[isa]
                     seed_means = [s.mean for s in group.seeds]
                     seed_stddevs = [s.stddev for s in group.seeds]
@@ -469,18 +523,25 @@ class TPGResultsAggregator:
                     mean_latency = mean(seed_means)
                     stddev_latency = mean(seed_stddevs) if seed_stddevs else 0.0
 
+                    # display point on plot
+                    offset = 0.1 # small jitter offset
+                    x_pos = xi - offset if isa == no_c_isa else xi + offset
                     ax.errorbar(
-                        xi, mean_latency,
+                        x_pos, mean_latency,
                         yerr=stddev_latency,
-                        fmt="o",
-                        color=color,
+                        fmt=marker,
+                        color="black",
                         capsize=5,
                         label=label
                     )
 
                 # X-axis label as "uarch | ISA"
                 x_ticks.append(xi)
-                x_labels.append(f"{uarch} | {no_c_isa}")#/{with_c_isa}
+
+                if (USE_UARCH_ISA):
+                    x_labels.append(f"{uarch}\n{no_c_isa}") #/{with_c_isa})
+                else:
+                    x_labels.append(f"{uarch}") 
 
             ax.set_xticks(x_ticks)
             ax.set_xticklabels(x_labels, rotation=45, ha="right")
@@ -490,6 +551,7 @@ class TPGResultsAggregator:
             by_label = {}
             for h, l in zip(handles, labels):
                 by_label[l] = h
+
             ax.legend(
                 by_label.values(),
                 by_label.keys(),
@@ -497,16 +559,18 @@ class TPGResultsAggregator:
                 loc="center left",
                 bbox_to_anchor=(1.02, 0.5),
             )
+
             fig.tight_layout()
-            safe_name = self.sanitize_filename(f"{tpg_nickname}_latency_per_uarch.png")
+            safe_name = self.sanitize_filename(f"{tpg_canonical}_latency_per_uarch.png")
             fig_path = self.out / safe_name
             fig.savefig(fig_path)
             plt.close(fig)
-            print(f"Saved plot for TPG {tpg_nickname} to {fig_path}")
+            print(f"Saved plot for TPG {tpg_canonical} to {fig_path}")
+
     def plot_best_tpg_per_uarch(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
         """
         Generate one figure per uarch.
-        X-axis: TPG (nickname)
+        X-axis: TPG (iset)
         Y-axis: log-scale latency
         Two ISAs per TPG: red = no 'c', blue = with 'c'
         """
@@ -521,21 +585,22 @@ class TPGResultsAggregator:
 
             # Build TPG list that contains this uarch
             tpgs_with_uarch = []
-            tpg_nicknames = []
+            x_labels = []
 
             for tpg, uarch_map in data.items():
                 if uarch not in uarch_map:
                     continue
 
-                # Extract nickname
+                # Extract iset
                 try:
                     sample_group = next(iter(next(iter(uarch_map.values())).values()))
-                    nickname = sample_group.tpg_nickname
+                    iset = sample_group.iset
+                    dtype = sample_group.dtype
                 except Exception:
-                    nickname = tpg
+                    iset = tpg
 
                 tpgs_with_uarch.append(tpg)
-                tpg_nicknames.append(nickname)
+                x_labels.append(iset + " " + dtype)
 
             if not tpgs_with_uarch:
                 continue
@@ -549,7 +614,7 @@ class TPGResultsAggregator:
             # X-axis = TPG nicknames
             x_ticks = range(len(tpgs_with_uarch))
             ax.set_xticks(x_ticks)
-            ax.set_xticklabels(tpg_nicknames, rotation=45, ha="right")
+            ax.set_xticklabels(x_labels, rotation=45, ha="right")
 
             # --- Plot each TPG
             for xi, tpg in enumerate(tpgs_with_uarch):
@@ -561,7 +626,7 @@ class TPGResultsAggregator:
                 isa_list = list(isa_map.keys())
                 no_c_isa, with_c_isa = self.is_c_extension(isa_list[0], isa_list[1])
 
-                for isa, color in zip([no_c_isa, with_c_isa], ["red", "blue"]):
+                for isa, marker in zip([no_c_isa, with_c_isa], ["o", "x"]):
                     group = isa_map[isa]
                     seed_means = [s.mean for s in group.seeds]
                     seed_stddevs = [s.stddev for s in group.seeds]
@@ -570,13 +635,16 @@ class TPGResultsAggregator:
                         continue
 
                     mean_latency = mean(seed_means)
-                    stddev_latency = mean(seed_stddevs) if seed_stddevs else 0.0
-
+                    stddev_latency = mean(seed_stddevs)
+                    
+                    # display point on plot
+                    offset = 0.1 # small jitter offset
+                    x_pos = xi - offset if isa == no_c_isa else xi + offset
                     ax.errorbar(
-                        xi, mean_latency,
+                        x_pos, mean_latency,
                         yerr=stddev_latency,
-                        fmt="o",
-                        color=color,
+                        fmt=marker,
+                        color="black",
                         capsize=5,
                         label=isa
                     )
@@ -648,7 +716,7 @@ def main(argv: Optional[List[str]]=None):
     # print(f"INFO: saved up to {args.max_per_tpg} per-TPG plots in {out_dir}")
 
     # quick summary printed
-    n_tpgs = df["tpg_nickname"].nunique() if not df.empty else 0
+    n_tpgs = df["iset"].nunique() if not df.empty else 0
     n_archs = df["uarch"].nunique() if not df.empty else 0
     #for isa in df["isa"].unique():
     #    print(isa)
