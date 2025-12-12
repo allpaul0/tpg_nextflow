@@ -570,6 +570,7 @@ class TPGResultsAggregator:
 
     def plot_best_tpg_per_uarch(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
         """
+        data[tpg][uarch][isa]
         Generate one figure per uarch.
         X-axis: TPG (iset)
         Y-axis: log-scale latency
@@ -586,16 +587,15 @@ class TPGResultsAggregator:
         # --- Build one plot per uarch
         for uarch in sorted(all_uarchs):
 
-            # Build TPG list that contains this uarch
-            tpgs_with_uarch = []
-            x_labels = []
-            x_dtypes = []
+            # Build TPG list that contains tpg using this uarch and iset, dtype informations for this tpg
+            tpg_using_uarch = []
 
+            # getting the tpgs that use this uarch only 
             for tpg, uarch_map in data.items():
                 if uarch not in uarch_map:
                     continue
 
-                # Extract iset
+                # Extract iset, dtype
                 try:
                     sample_group = next(iter(next(iter(uarch_map.values())).values()))
                     iset = sample_group.iset
@@ -604,12 +604,29 @@ class TPGResultsAggregator:
                     iset = "unk"
                     dtype = "unk"
 
-                tpgs_with_uarch.append(tpg)
-                x_labels.append(iset)
-                x_dtypes.append(dtype)
+                tpg_using_uarch.append((tpg, iset, dtype))
 
-            if not tpgs_with_uarch:
-                continue
+            iset_custom_order = [
+                "{*,/,>,-,+}",
+                "{log,exp,*,/,>,-,+}",
+                "{trig,*,/,>,-,+}",
+                "{trig,log,exp,*,/,>,-,+}",
+                "{log2,exp2,>,-,+}",
+                "{log2,exp2,*,>,-,+}",
+                "{log2,exp2,*,/,>,-,+}",
+            ]
+
+            # Map each string to its order index
+            iset_order_index = {s: i for i, s in enumerate(iset_custom_order)}
+
+            # order the tpg list by dtype, iset 
+            tpg_using_uarch.sort(key=lambda tup: (tup[2], iset_order_index[tup[1]])) #(tup[2], tup[1]) for dtype and then iset
+          
+            
+            print("\n")
+            for e in tpg_using_uarch:
+                print(e)
+
 
             fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
             ax.set_title(f"Latency per TPG for uarch: {uarch}")
@@ -618,12 +635,12 @@ class TPGResultsAggregator:
             ax.set_yscale("log")
 
             # X-axis = TPG nicknames
-            x_ticks = range(len(tpgs_with_uarch))
+            x_ticks = range(len(tpg_using_uarch))
             ax.set_xticks(x_ticks)
-            ax.set_xticklabels(x_labels, rotation=45, ha="right")
+            ax.set_xticklabels([x[1] for x in tpg_using_uarch], rotation=45, ha="right")
 
             # color each label based on dtype
-            for tick_label, dtype in zip (ax.get_xticklabels(), x_dtypes):
+            for tick_label, dtype in zip (ax.get_xticklabels(), [x[2] for x in tpg_using_uarch]):
                 if dtype == "float":
                     tick_label.set_color(float_color)
                 elif dtype == "fixedpt":
@@ -631,7 +648,6 @@ class TPGResultsAggregator:
                 else:
                     tick_label.set_color("black")   # fallback
 
-            
             # --- Secondary X-axis for dtypes ---
             ax2 = ax.twiny()
             ax2.set_xlim(ax.get_xlim())
@@ -639,7 +655,7 @@ class TPGResultsAggregator:
 
             # Group TPGs by dtype and compute positions for labels
             dtype_positions = {}
-            for xi, dtype in enumerate(x_dtypes):
+            for xi, dtype in enumerate([x[2] for x in tpg_using_uarch]):
                 if dtype not in dtype_positions:
                     dtype_positions[dtype] = []
                 dtype_positions[dtype].append(xi)
@@ -656,8 +672,9 @@ class TPGResultsAggregator:
                     color=color
                 )
 
+            all_vals = []
             # --- Plot each TPG
-            for xi, tpg in enumerate(tpgs_with_uarch):
+            for xi, tpg in enumerate([x[0] for x in tpg_using_uarch]):
                 isa_map = data[tpg][uarch]
                 if len(isa_map) != 2:
                     print(f"WARNING: In uarch {uarch}, TPG {tpg} does not have exactly 2 ISAs, skipping.")
@@ -676,6 +693,9 @@ class TPGResultsAggregator:
 
                     mean_latency = mean(seed_means)
                     stddev_latency = mean(seed_stddevs)
+
+                    all_vals.append(mean_latency+stddev_latency)
+                    all_vals.append(mean_latency-stddev_latency)
                     
                     # display point on plot
                     offset = 0.1 # small jitter offset
@@ -688,6 +708,12 @@ class TPGResultsAggregator:
                         capsize=5,
                         label=isa
                     )
+
+            # define y-axis start and end values 
+            if all_vals:
+                ymin = min(all_vals)
+                ymax = max(all_vals)
+                ax.set_ylim(ymin*0.9, ymax*1.1)
 
             # Unique legend (outside plot)
             handles, labels = ax.get_legend_handles_labels()
@@ -709,6 +735,145 @@ class TPGResultsAggregator:
             plt.close(fig)
 
             print(f"Saved plot for uarch {uarch} to {fig_path}")
+
+    # def manual_plot_all_tpgs_per_uarch(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
+    #     """
+    #     Generate one figure per uarch.
+    #     X-axis: TPG (iset)
+    #     Y-axis: log-scale latency
+    #     Two ISAs per TPG: red = no 'c', blue = with 'c'
+    #     """
+    #     float_color = '#252323' # Shadow Grey
+    #     fixedpt_color = '#540b0e' # Sate Grey
+
+    #     # --- Gather all possible uarchs across all TPGs
+    #     all_uarchs = set()
+    #     for tpg, uarch_map in data.items():
+    #         all_uarchs.update(uarch_map.keys())
+
+    #     # --- Build one plot per uarch
+    #     for uarch in sorted(all_uarchs):
+
+    #         # Build TPG list that contains this uarch
+    #         tpg_using_uarch = []
+    #         x_labels = []
+    #         x_dtypes = []
+
+    #         for tpg, uarch_map in data.items():
+    #             if uarch not in uarch_map:
+    #                 continue
+
+    #             # Extract iset
+    #             try:
+    #                 sample_group = next(iter(next(iter(uarch_map.values())).values()))
+    #                 iset = sample_group.iset
+    #                 dtype = sample_group.dtype
+    #             except Exception:
+    #                 iset = "unk"
+    #                 dtype = "unk"
+
+    #             tpg_using_uarch.append(tpg)
+    #             x_labels.append(iset)
+    #             x_dtypes.append(dtype)
+
+    #         fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
+    #         ax.set_title(f"Latency per TPG for uarch: {uarch}")
+    #         ax.set_xlabel("TPG")
+    #         ax.set_ylabel("Latency CC")
+    #         ax.set_yscale("log")
+
+    #         # X-axis = TPG nicknames
+    #         x_ticks = range(len(tpg_using_uarch))
+    #         ax.set_xticks(x_ticks)
+    #         ax.set_xticklabels(x_labels, rotation=45, ha="right")
+
+    #         # color each label based on dtype
+    #         for tick_label, dtype in zip (ax.get_xticklabels(), x_dtypes):
+    #             if dtype == "float":
+    #                 tick_label.set_color(float_color)
+    #             elif dtype == "fixedpt":
+    #                 tick_label.set_color(fixedpt_color)
+    #             else:
+    #                 tick_label.set_color("black")   # fallback
+
+            
+    #         # --- Secondary X-axis for dtypes ---
+    #         ax2 = ax.twiny()
+    #         ax2.set_xlim(ax.get_xlim())
+    #         ax2.set_xticks([])  # Hide default ticks
+
+    #         # Group TPGs by dtype and compute positions for labels
+    #         dtype_positions = {}
+    #         for xi, dtype in enumerate(x_dtypes):
+    #             if dtype not in dtype_positions:
+    #                 dtype_positions[dtype] = []
+    #             dtype_positions[dtype].append(xi)
+
+    #         # Add dtype labels at the center of each group with color
+    #         for dtype, positions in dtype_positions.items():
+    #             center_pos = sum(positions) / len(positions)
+    #             color = float_color if dtype == "float" else fixedpt_color if dtype == "fixedpt" else "black"
+    #             ax2.text(
+    #                 center_pos, -0.40, dtype,
+    #                 ha="center", va="top",
+    #                 transform=ax.get_xaxis_transform(),
+    #                 fontsize=10,
+    #                 color=color
+    #             )
+
+    #         # --- Plot each TPG
+    #         for xi, tpg in enumerate(tpg_using_uarch):
+    #             isa_map = data[tpg][uarch]
+    #             if len(isa_map) != 2:
+    #                 print(f"WARNING: In uarch {uarch}, TPG {tpg} does not have exactly 2 ISAs, skipping.")
+    #                 continue
+
+    #             isa_list = list(isa_map.keys())
+    #             no_c_isa, with_c_isa = self.is_c_extension(isa_list[0], isa_list[1])
+
+    #             for isa, marker in zip([no_c_isa, with_c_isa], ["o", "x"]):
+    #                 group = isa_map[isa]
+    #                 seed_means = [s.mean for s in group.seeds]
+    #                 seed_stddevs = [s.stddev for s in group.seeds]
+
+    #                 if not seed_means:
+    #                     continue
+
+    #                 mean_latency = mean(seed_means)
+    #                 stddev_latency = mean(seed_stddevs)
+                    
+    #                 # display point on plot
+    #                 offset = 0.1 # small jitter offset
+    #                 x_pos = xi - offset if isa == no_c_isa else xi + offset
+    #                 ax.errorbar(
+    #                     x_pos, mean_latency,
+    #                     yerr=stddev_latency,
+    #                     fmt=marker,
+    #                     color="black",
+    #                     capsize=5,
+    #                     label=isa
+    #                 )
+
+    #         # Unique legend (outside plot)
+    #         handles, labels = ax.get_legend_handles_labels()
+    #         by_label = dict(zip(labels, handles))
+
+    #         ax.legend(
+    #             by_label.values(),
+    #             by_label.keys(),
+    #             title="ISA",
+    #             loc="center left",
+    #             bbox_to_anchor=(1.02, 0.5),
+    #         )
+
+    #         fig.tight_layout()
+
+    #         safe_name = self.sanitize_filename(f"{uarch}_latency_per_tpg.png")
+    #         fig_path = self.out / safe_name
+    #         fig.savefig(fig_path, bbox_inches="tight")
+    #         plt.close(fig)
+
+    #         print(f"Saved plot for uarch {uarch} to {fig_path}")
 
     # def plot_all_tpgs_per_uarch(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
     #     """
@@ -840,9 +1005,9 @@ def main(argv: Optional[List[str]]=None):
     #agg.save_csv(df_avg, "aggregated_averaged_tpg_results.csv")
 
     #agg.plot_best_uarch_per_tpg(data)
-    #agg.plot_best_tpg_per_uarch(data)
+    agg.plot_best_tpg_per_uarch(data)
 
-    agg.plot_all_tpgs_per_uarch(data)
+    #agg.plot_all_tpgs_per_uarch(data)
 
     # Combined plot
     # combined_png = out_dir / "combined_latency_by_tpg.png"
