@@ -279,36 +279,36 @@ class TPGResultsAggregator:
         """
         Produce a compact nickname from a simulator string.
         Patterns handled:
-        cv32e20 -> s2 
-        cv32e40 -> s4
+        cv32e20 -> e2 
+        cv32e40 -> e4
         ! Attention à l'ordre des règles !
         """
         
-        simulator = simulator.replace("cv32e20", "s2") # simplifie
-        simulator = simulator.replace("cv32e40", "s4") # simplifie
+        simulator = simulator.replace("cv32e20", "e2") # simplifie
+        simulator = simulator.replace("cv32e40", "e4") # simplifie
         simulator = simulator.replace("corev_pulp", "pulp") # simplifie
                
-        # s4x_i-em0,1,2 -> renommage
-        simulator = simulator.replace("s4x_im0", "s4x_im0d2") # ajoute div
-        simulator = simulator.replace("s4x_im1", "s4x_im4d2") # change mult -> basé ressources, ajoute div
-        simulator = simulator.replace("s4x_im2", "s4x_im4d0") # change mult -> basé ressources, ajoute div
+        # e4x_i-em0,1,2 -> renommage
+        simulator = simulator.replace("e4x_im0", "e4x_im0d2") # ajoute div
+        simulator = simulator.replace("e4x_im1", "e4x_im4d2") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("e4x_im2", "e4x_im4d0") # change mult -> basé ressources, ajoute div
 
-        simulator = simulator.replace("s4x_em0", "s4x_em0d2") # ajoute div
-        simulator = simulator.replace("s4x_em1", "s4x_em4d2") # change mult -> basé ressources, ajoute div
-        simulator = simulator.replace("s4x_em2", "s4x_em4d0") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("e4x_em0", "e4x_em0d2") # ajoute div
+        simulator = simulator.replace("e4x_em1", "e4x_em4d2") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("e4x_em2", "e4x_em4d0") # change mult -> basé ressources, ajoute div
 
-        simulator = simulator.replace("s4px", "s4x_im4d2") # ajout mult -> basé ressources
+        simulator = simulator.replace("e4px", "e4x_im4d2") # ajout mult -> basé ressources
 
-        # s2_i-em0-3 -> add div
-        simulator = simulator.replace("s2_im0", "s2_im0d1")
-        simulator = simulator.replace("s2_im1", "s2_im1d1")
-        simulator = simulator.replace("s2_im2", "s2_im2d1")
-        simulator = simulator.replace("s2_im3", "s2_im3d1")
+        # e2_i-em0-3 -> add div
+        simulator = simulator.replace("e2_im0", "e2_im0d1")
+        simulator = simulator.replace("e2_im1", "e2_im1d1")
+        simulator = simulator.replace("e2_im2", "e2_im2d1")
+        simulator = simulator.replace("e2_im3", "e2_im3d1")
 
-        simulator = simulator.replace("s2_em0", "s2_em0d1")
-        simulator = simulator.replace("s2_em1", "s2_em1d1")
-        simulator = simulator.replace("s2_em2", "s2_em2d1")
-        simulator = simulator.replace("s2_em3", "s2_em3d1")
+        simulator = simulator.replace("e2_em0", "e2_em0d1")
+        simulator = simulator.replace("e2_em1", "e2_em1d1")
+        simulator = simulator.replace("e2_em2", "e2_em2d1")
+        simulator = simulator.replace("e2_em3", "e2_em3d1")
 
         simulator = simulator.replace("px", "") # rassemble px, x
         simulator = simulator.replace("x", "") # rassemble px, x
@@ -632,11 +632,6 @@ class TPGResultsAggregator:
 
             # order the tpg list by dtype, iset 
             tpg_using_uarch.sort(key=lambda tup: (tup[2], iset_order_index[tup[1]])) #(tup[2], tup[1]) for dtype and then iset
-          
-            
-            print("\n")
-            for e in tpg_using_uarch:
-                print(e)
 
 
             fig, ax = plt.subplots(figsize=(12, 6), constrained_layout=True)
@@ -1129,7 +1124,7 @@ class TPGResultsAggregator:
         ax.legend(
             by_label.values(),
             by_label.keys(),
-            title="UARCH | ISA",
+            title="UARCH | ISA",
             loc="center left",
             bbox_to_anchor=(1.02, 0.5),
         )
@@ -1142,6 +1137,219 @@ class TPGResultsAggregator:
         plt.close(fig)
 
         print(f"Saved plot for x-axis_tpgs_all_uarchs_min_max")
+
+    
+    def plot_x_axis_uarchs_y_axis_all_tpgs(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
+        """
+        x-axis represents uarchs
+        y-axis represents tpgs using this uarch
+        1. find all uarchs to define x-axis
+        2. for each uarch write every tpg on its column
+        """
+        fig, ax = plt.subplots(figsize=(28, 6), constrained_layout=True)
+        ax.set_title(f"Latency per uarch for all TPG")
+        ax.set_xlabel("uarch")
+        ax.set_ylabel("Latency CC")
+        ax.set_yscale("log")
+
+        # find all uarchs to define x-axis
+        all_uarchs = []
+
+        for tpg, uarch_map in data.items():
+            for uarch, isa_map in uarch_map.items():
+                if uarch not in all_uarchs:
+                    all_uarchs.append(uarch)
+
+        uarch_custom_order = [
+            "e2_em0d1",
+            "e2_em1d1",
+            "e2_em2d1",
+            "e2_em3d1",
+            
+            "e2_im0d1",
+            "e2_im1d1",
+            "e2_im2d1",
+            "e2_im3d1",
+            
+            "e4_em0d2",
+            "e4_em4d0",
+            "e4_em4d2",
+
+            "e4_im0d2",
+            "e4_im4d0",
+
+            "e4_im4d2",
+            
+            "e4_im4d2_pulp",
+            "e4_im4d2_fpu",
+            "e4_im4d2_pulp_fpu",
+        ]
+
+        # Map each string to its order index
+        uarch_order_index = {s: i for i, s in enumerate(uarch_custom_order)}     
+
+        # sort the all_uarchs list 
+        # indexes will be used to find where to place each corresonding TPG on the figure 
+        all_uarchs.sort(key=lambda e: uarch_order_index.get(e, len(uarch_custom_order)))
+
+
+        x_ticks = range(len(all_uarchs))
+        ax.set_xticks(x_ticks)
+        ax.set_xticklabels(all_uarchs, rotation=45, ha="right")
+
+        y_axis_all_vals = []
+        tpg_colors = {}
+        id_ku = 0
+        # Gather all x positions used
+        x_axis_all_x_positions = []
+        offset_isa = 0.025
+        offset_uarch = offset_isa * 2.5
+
+        for tpg, uarch_map in data.items():
+
+            if not tpg in tpg_colors:
+                color = np.random.rand(3,)
+                tpg_colors.update({tpg: (color, id_ku)})
+                id_ku += 1
+
+            # fetch tpg informations from any group under this TPG
+            try:
+                sample_group = next(iter(next(iter(uarch_map.values())).values()))
+                iset = sample_group.iset
+                dtype = sample_group.dtype
+                tpg_canonical = sample_group.tpg_canonical
+                    
+            except Exception:
+                print("Error on: " + tpg_canonical)
+                iset = ""
+                dtype = ""
+                tpg_canonical = tpg
+
+            uarchs_sorted = sorted(uarch_map.keys())
+
+            # get the isa for dic[tpg][uarch]
+            for uarch in uarchs_sorted:
+                isa_map = uarch_map[uarch]
+                if len(isa_map) != 2:
+                    print(f"WARNING: uarch {uarch} does not have exactly 2 ISAs, skipping.")
+                    continue
+
+                isa_list = list(isa_map.keys())
+                no_c_isa, with_c_isa = self.is_c_extension(isa_list[0], isa_list[1])
+
+                # base and compressed ISA
+                for isa, marker, label in zip([no_c_isa, with_c_isa], ["o", "x"], ["base_isa", "compressed_isa"]):
+                    group = isa_map[isa]
+                    seed_means = [s.mean for s in group.seeds]
+                    seed_stddevs = [s.stddev for s in group.seeds]
+                    if not seed_means:
+                        continue
+                    mean_latency = mean(seed_means)
+                    stddev_latency = mean(seed_stddevs) if seed_stddevs else 0.0
+
+                    y_axis_all_vals.append(mean_latency + stddev_latency)
+                    y_axis_all_vals.append(mean_latency - stddev_latency)
+
+                    # display point on plot
+                    # xi is the position of the uarch in all_uarcchs sorted
+                    xi = all_uarchs.index(uarch)
+                    offset = offset_isa # small jitter offset
+                    x_pos = xi - offset if isa == no_c_isa else xi + offset
+
+                    index = tpg_colors[tpg][1]
+                    if index%2 == 0:
+                        x_pos = x_pos - index/2 * offset_uarch
+                    else:
+                        x_pos = x_pos + index/2 * offset_uarch
+
+                    x_axis_all_x_positions.append(x_pos)
+                    ax.errorbar(
+                        x_pos, mean_latency,
+                        yerr=stddev_latency,
+                        fmt=marker,
+                        color=tpg_colors[tpg][0],
+                        capsize=5,
+                        label=iset + ", " + dtype #+ "|" + isa
+                    )
+                    
+        # define x-axis start and end index
+        ax.set_xlim(min(x_axis_all_x_positions) - 0.05, max(x_axis_all_x_positions) + 0.05)
+
+        # define y-axis start and end index
+        if y_axis_all_vals:
+            ymin = min(y_axis_all_vals)
+            ymax = max(y_axis_all_vals)
+            ax.set_ylim(ymin*0.9, ymax*1.1)
+
+
+        ###### LEGEND ######    
+        # Only show base/compressed ISA in legend once
+        handles, labels = ax.get_legend_handles_labels()
+
+        legend_entries = {}
+        for h, l in zip(handles, labels):
+            if l not in legend_entries:
+                legend_entries[l] = h
+
+
+        # --- custom iset order ---
+        iset_custom_order = [
+            "{*,/,>,-,+}",
+            "{log,exp,*,/,>,-,+}",
+            "{trig,*,/,>,-,+}",
+            "{trig,log,exp,*,/,>,-,+}",
+            "{log2,exp2,>,-,+}",
+            "{log2,exp2,*,>,-,+}",
+            "{log2,exp2,*,/,>,-,+}",
+        ]
+        iset_order_index = {s: i for i, s in enumerate(iset_custom_order)}
+
+
+        def legend_sort_key(label: str):
+            # label = "{iset,...}, dtype"
+            try:
+                iset, dtype = [s.strip() for s in label.rsplit(",", 1)]
+            except ValueError:
+                print("valueError in sort key:", label)
+                return ("", float("inf"))
+
+            return (
+                dtype,                                   # 1. dtype
+                iset_order_index.get(
+                    iset,
+                    len(iset_custom_order)               # unknown isets last
+                )
+            )
+
+
+        # sort legend entries
+        sorted_items = sorted(
+            legend_entries.items(),
+            key=lambda item: legend_sort_key(item[0])
+        )
+
+        sorted_labels = [l for l, _ in sorted_items]
+        sorted_handles = [h for _, h in sorted_items]
+
+
+        ax.legend(
+            sorted_handles,
+            sorted_labels,
+            title="TPG",
+            loc="center left",
+            bbox_to_anchor=(1.02, 0.5),
+        )
+        ###### END LEGEND ######    
+
+        fig.tight_layout()
+        safe_name = self.sanitize_filename(f"x-axis all uarchs_y-axis_all_tpgs.png")
+        fig_path = self.out / safe_name
+        fig.savefig(fig_path)
+        plt.close(fig)
+        print(f"Saved plot to {fig_path}")
+
+        
+
 
     def sanitize_filename(self, s: str) -> str:
         """Make a safe filename from a string."""
@@ -1179,7 +1387,10 @@ def main(argv: Optional[List[str]]=None):
     #agg.plot_x_axis_uarchs_y_axis_one_tpg(data)
     #agg.plot_x_axis_tpgs_y_axis_one_uarch(data)
 
-    agg.plot_x_axis_tpgs_y_axis_all_uarchs_min_max(data)
+    #agg.plot_x_axis_tpgs_y_axis_all_uarchs(data)
+    #agg.plot_x_axis_tpgs_y_axis_all_uarchs_min_max(data)
+
+    agg.plot_x_axis_uarchs_y_axis_all_tpgs(data)
 
     # Combined plot
     # combined_png = out_dir / "combined_latency_by_tpg.png"
@@ -1196,7 +1407,7 @@ def main(argv: Optional[List[str]]=None):
     #    print(isa)
     print(f"SUMMARY: TPGs={n_tpgs}, architectures={n_archs}, total_rows={len(df)}")
 
-# scripts/aggregate_tpg_results.py --root tpg_expe --out results_out
+# python3 pipeline/scripts/aggregate_tpg_results.py --root tpg_expe --out results_out
 
 if __name__ == "__main__":
     main()
