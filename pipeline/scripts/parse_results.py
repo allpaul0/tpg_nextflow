@@ -12,6 +12,7 @@ import sys
 def main(training_results):
     results_df = pd.DataFrame()
     for training_result in training_results:
+        print(training_result)
         # Each training_result is a path to a folder
         file = os.path.join(training_result, 'outLogs', 'garbage.ods')
         params_path = os.path.join(training_result, 'params', 'trainParams.json')
@@ -24,6 +25,12 @@ def main(training_results):
                 seed = params.get('seed')
                 instrType = params.get('instrType')
                 instrSetName = params.get('instrSetName')
+                useInstrTrig = params.get('useInstrTrig')
+                useInstrLogExp = params.get('useInstrLogExp')
+                useInstrComparison = params.get('useInstrComparison')
+                useInstrExpensiveArithmetic = params.get('useInstrExpensiveArithmetic')
+                useInstrZmmul = bool(params.get('useInstrZmmul', False))
+                useInstrLog2Exp2 = bool(params.get('useInstrLog2Exp2', False))
 
         if os.path.isfile(file):
             with open(file) as f:
@@ -33,6 +40,12 @@ def main(training_results):
             df['seed'] = seed
             df['instrType'] = instrType
             df['instrSetName'] = instrSetName
+            df['useInstrTrig'] = useInstrTrig
+            df['useInstrLogExp'] = useInstrLogExp
+            df['useInstrComparison'] = useInstrComparison
+            df['useInstrExpensiveArithmetic'] = useInstrExpensiveArithmetic
+            df['useInstrZmmul'] = useInstrZmmul
+            df['useInstrLog2Exp2'] = useInstrLog2Exp2
             results_df = pd.concat([results_df, df]) 
 
     results_df.to_csv('results.csv', index=False)
