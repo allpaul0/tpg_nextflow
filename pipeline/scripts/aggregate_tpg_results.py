@@ -36,6 +36,12 @@ from typing import Dict, List, Optional, Tuple, Any
 # -----------------------------
 
 @dataclass
+class Uarch_Ressources:
+    dsps: int
+    regs: int
+    luts: int
+
+@dataclass
 class SeedResult:
     mean: float
     stddev: float
@@ -52,6 +58,8 @@ class ArchGroup:
     iset: str
     dtype: str
     seeds: List[SeedResult]
+    accuracy: Optional[float] = None
+    uarch_ressources: Optional[Uarch_Ressources] = None 
 
 # -----------------------------
 # Helpers
@@ -1291,7 +1299,6 @@ class TPGResultsAggregator:
             if l not in legend_entries:
                 legend_entries[l] = h
 
-
         # --- custom iset order ---
         iset_custom_order = [
             "{*,/,>,-,+}",
@@ -1304,7 +1311,6 @@ class TPGResultsAggregator:
         ]
         iset_order_index = {s: i for i, s in enumerate(iset_custom_order)}
 
-
         def legend_sort_key(label: str):
             # label = "{iset,...}, dtype"
             try:
@@ -1313,13 +1319,8 @@ class TPGResultsAggregator:
                 print("valueError in sort key:", label)
                 return ("", float("inf"))
 
-            return (
-                dtype,                                   # 1. dtype
-                iset_order_index.get(
-                    iset,
-                    len(iset_custom_order)               # unknown isets last
-                )
-            )
+            # 1. dtype 2. isets, unknown isets last
+            return (dtype, iset_order_index.get(iset, len(iset_custom_order)))
 
 
         # sort legend entries
@@ -1348,8 +1349,6 @@ class TPGResultsAggregator:
         plt.close(fig)
         print(f"Saved plot to {fig_path}")
 
-        
-
 
     def sanitize_filename(self, s: str) -> str:
         """Make a safe filename from a string."""
@@ -1360,6 +1359,292 @@ class TPGResultsAggregator:
         df.to_csv(csv_path, index=False)
         print(f"Saved aggregated CSV to {csv_path}")
 
+
+    def import_tpg_accuracies(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]], csv_accuracies_path: str):
+        """
+        Import accuracies from a CSV file and integrate them into the data structure.
+        The CSV is expected to have columns: 'tpg_canonical', 'accuracy'.
+        """
+        if not os.path.isfile(csv_accuracies_path):
+            print(f"WARNING: Accuracy CSV file {csv_accuracies_path} not found.")
+            return
+
+        variable = 'vDistMax' # 'vSuccess'
+
+        accuracies_df = pd.read_csv(csv_accuracies_path)
+
+        # Keep only Gen == 99
+        gen99 = accuracies_df[accuracies_df['Gen'] == 99]
+
+        # One value per (instrType, instrSetName, seed)
+        grouped = gen99.groupby(
+            ['instrType', 'instrSetName', 'seed'],
+            as_index=False
+        )[variable].mean()
+
+        accuracies_summary = grouped.groupby(['instrType', 'instrSetName'], 
+            as_index=False)[variable].agg(mean='mean', std='std')
+
+        instrType_order = ['double', 'float', 'fixedpt']
+
+        instrSet_order = [
+            'comp',
+            'logexp',
+            'trigo',
+            'complete',
+            'l2e2_compBare',
+            'l2e2_compZmmul',
+            'l2e2_compExpAr'
+        ]
+
+        instrSet_labels = {
+            'comp': "{" + "*,/,>,-,+" + "}",
+            'logexp': "{" + "log,exp," + "*,/,>,-,+" + "}",
+            'trigo': "{" + "trig," + "*,/,>,-,+" + "}",
+            'complete': "{" + "trig," + "log,exp," + "*,/,>,-,+" + "}",
+            'l2e2_compBare': "{" + "log2,exp2," + ">,-,+" + "}",
+            'l2e2_compZmmul': "{" + "log2,exp2," + "*," + ">,-,+" + "}",
+            'l2e2_compExpAr': "{" + "log2,exp2," + "*,/," + ">,-,+" + "}"
+        }
+
+        accuracies_summary['instrSet_label'] = accuracies_summary['instrSetName'].map(instrSet_labels)
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                for isa, archgroup in sorted(isa_map.items()):
+                    
+                    # fetch in accuracies_summary 
+                    for row in accuracies_summary.itertuples(index=False):
+                        if row.instrSet_label + row.instrType == archgroup.iset + archgroup.dtype: 
+                            archgroup.accuracy = row.mean
+                            # archgroup.accuracy_std = row.std
+                            #print(archgroup.iset, archgroup.dtype, row.mean)
+    
+    def is_pareto_efficient(self, costs):
+        """
+        Find the Pareto-efficient points (minimizing both objectives)
+        """
+        is_efficient = np.ones(costs.shape[0], dtype=bool)
+        for i, c in enumerate(costs):
+            if is_efficient[i]:
+                # Remove dominated points (those worse in both dimensions)
+                is_efficient[is_efficient] = np.any(costs[is_efficient] < c, axis=1)
+                is_efficient[i] = True
+        return is_efficient
+
+    def plot_pareto_front_acc_lat(self, data):
+
+        accuracies = []
+        latencies = []
+        points_meta = []   # full provenance per point
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                for isa, archgroup in sorted(isa_map.items()):
+                    if archgroup.accuracy is not None:
+                        # archgroup.iset + archgroup.dtype  
+                        accuracies.append(archgroup.accuracy)
+                        seed_means = [s.mean for s in archgroup.seeds]
+                        #overall mean for this [tpg][uarch][isa] taking each seed into account (no stddev used)
+                        latencies.append(mean(seed_means)) 
+                        points_meta.append({
+                            "tpg": tpg,
+                            "uarch": uarch,
+                            "isa": isa,
+                            "iset": archgroup.iset,
+                            "dtype": archgroup.dtype,
+                        })
+
+        X = np.array(accuracies)
+        Y = np.array(latencies)
+        
+        categories = [(m["iset"], m["dtype"]) for m in points_meta]
+        unique_cats = list(dict.fromkeys(categories))
+
+        cmap = plt.get_cmap('tab20')
+        color_map = {
+            cat: cmap(i % cmap.N)
+            for i, cat in enumerate(unique_cats)
+        }
+
+        colors = np.array([color_map[c] for c in categories])
+
+        # Combine X and Y into a cost matrix
+        costs = np.column_stack((X, Y))
+
+        # Find Pareto-efficient points
+        pareto_mask = self.is_pareto_efficient(costs)
+        pareto_X = X[pareto_mask]
+        pareto_Y = Y[pareto_mask]
+
+        pareto_points = [
+            meta
+            for meta, is_pareto in zip(points_meta, pareto_mask)
+            if is_pareto
+        ]
+
+        pareto_colors = [ color_map[c] for c, is_pareto in zip(categories, pareto_mask) if is_pareto ]
+                
+        # Sort Pareto points for proper line plotting
+        sort_idx = np.argsort(pareto_X)
+        pareto_X_sorted = pareto_X[sort_idx]
+        pareto_Y_sorted = pareto_Y[sort_idx]
+
+        # Create the plot
+        plt.figure(figsize=(10, 7))
+
+        # Plot all points
+        plt.scatter(X[~pareto_mask],Y[~pareto_mask], c=colors[~pareto_mask], alpha=0.6, s=50, label='Dominated solutions', zorder=1)
+
+        # Plot Pareto front points
+        pareto_colors = [
+            color_map[c]
+            for c, is_pareto in zip(categories, pareto_mask)
+            if is_pareto
+        ]
+        plt.scatter(pareto_X, pareto_Y, c=pareto_colors, s=100, label='Pareto front', zorder=3, edgecolors=pareto_colors, linewidth=1.5)
+
+        # Connect Pareto front points with a line
+        plt.plot(pareto_X_sorted, pareto_Y_sorted, 'r--', linewidth=2, alpha=0.7, zorder=2)
+
+        # Styling
+        plt.xlabel('Distance to objective', fontsize=12, fontweight='bold')
+        plt.ylabel('Latency', fontsize=12, fontweight='bold')
+        plt.title('Pareto Front Visualization', fontsize=14, fontweight='bold')
+        plt.legend(fontsize=11, loc='upper right')
+        plt.grid(True, alpha=0.3, linestyle='--')
+        plt.tight_layout()
+
+        # Add arrow annotations to show the improvement direction
+        plt.annotate('', xy=(1, 1), xytext=(3, 3), arrowprops=dict(arrowstyle='->', lw=2, color='green', alpha=0.6))
+        plt.text(2.5, 2.5, 'Better', fontsize=10, color='green', fontweight='bold', ha='center')
+
+        plt.yscale('log')
+
+        from matplotlib.lines import Line2D
+
+        iset_custom_order = [
+            "{*,/,>,-,+}",
+            "{log,exp,*,/,>,-,+}",
+            "{trig,*,/,>,-,+}",
+            "{trig,log,exp,*,/,>,-,+}",
+            "{log2,exp2,>,-,+}",
+            "{log2,exp2,*,>,-,+}",
+            "{log2,exp2,*,/,>,-,+}",
+        ]
+        iset_order_index = {s: i for i, s in enumerate(iset_custom_order)}
+
+        def legend_sort_key(cat):
+            iset, dtype = cat
+            return (
+                dtype,  # primary: dtype
+                iset_order_index.get(iset, len(iset_custom_order))  # secondary: iset
+            )
+
+        # Sort categories
+        sorted_cats = sorted(unique_cats, key=legend_sort_key)
+
+        iset_dtype_elements = [
+            Line2D(
+                [0], [0],
+                marker='o',
+                linestyle='',
+                markerfacecolor=color_map[(iset, dtype)],
+                markeredgewidth=0,      # no outline
+                label=f"{iset}, {dtype}",
+                markersize=9,
+            )
+            for (iset, dtype) in sorted_cats
+        ]
+
+        pareto_arch_elements = []
+        seen = set()
+
+        for meta in pareto_points:
+            key = (meta["uarch"], meta["isa"])
+            if key in seen:
+                continue
+            seen.add(key)
+
+            pareto_arch_elements.append(
+                Line2D(
+                    [0], [0],
+                    marker='o',
+                    linestyle='',
+                    markerfacecolor=color_map[(meta["iset"], meta["dtype"])],
+                    markeredgewidth=0,
+                    markersize=9,
+                    label=f'{meta["uarch"]} | {meta["isa"]}'
+                )
+            )
+
+        iset_header = Line2D(
+            [], [], linestyle='none',
+            label="Instruction set | dtype"
+        )
+
+        pareto_header = Line2D(
+            [], [], linestyle='none',
+            label="Pareto-efficient uarch | ISA"
+        )
+
+
+        legend_elements = (
+            [iset_header]
+            + iset_dtype_elements
+            + [Line2D([], [], linestyle='none', label="")]  # spacer
+            + [pareto_header]
+            + pareto_arch_elements
+        )
+
+        plt.legend(
+            handles=legend_elements,
+            fontsize=9,
+            loc='best',
+            frameon=True,
+            handlelength=1.2,
+            handletextpad=0.6
+        )
+
+        plt.show()
+
+        # Print statistics
+        print(f"Total points: {len(X)}")
+        print(f"Pareto-efficient points: {np.sum(pareto_mask)}")
+        print(f"Percentage on Pareto front: {100 * np.sum(pareto_mask) / len(X):.1f}%")
+
+    def import_uarch_ressources(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]], uarchs_resources_path: str):
+        """
+        Import uarch resources from a CSV file and integrate them into the data structure.
+        The CSV is expected to have columns: 'uarch', 'LUTs', 'FFs', 'BRAMs', 'DSPs'.
+        """
+        import pickle
+
+        with open(uarchs_resources_path, "rb") as f:
+            uarchs_ressources = pickle.load(f)
+
+        tmp = {}
+        for uarch, res in uarchs_ressources.items():
+            uarch_nickname = self.assign_simulator_nickname(uarch)
+            tmp.update({uarch_nickname: res})
+
+        uarchs_ressources = tmp
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                if uarch in uarchs_ressources.keys():
+                    res = uarchs_ressources[uarch]
+                    for isa, archgroup in sorted(isa_map.items()):
+                        
+                        n_dsps = res.get('DSPs')[0]
+                        n_luts= res.get("Slice LUTs")[0]
+                        n_regs= res.get("Slice Registers")[0]
+                       
+                        archgroup.uarch_ressources = Uarch_Ressources(
+                            dsps=n_dsps,
+                            regs=n_regs,
+                            luts=n_luts,
+                        )
 
 # -----------------------------
 # CLI / main
@@ -1375,6 +1660,8 @@ def main(argv: Optional[List[str]]=None):
 
     json_config_files = agg.find_json_files("configs")
     json_result_files = agg.find_json_files("results")
+    csv_accuracies_path = "tpg_expe/parsed_results/results.csv"
+    uarchs_ressources_path = "tpg_expe/uarch_results/uarchs_ressources.pkl"
         
     data = agg.build_hierarchical_data(json_result_files)
 
@@ -1390,7 +1677,13 @@ def main(argv: Optional[List[str]]=None):
     #agg.plot_x_axis_tpgs_y_axis_all_uarchs(data)
     #agg.plot_x_axis_tpgs_y_axis_all_uarchs_min_max(data)
 
-    agg.plot_x_axis_uarchs_y_axis_all_tpgs(data)
+    # agg.plot_x_axis_uarchs_y_axis_all_tpgs(data)
+
+    agg.import_tpg_accuracies(data, csv_accuracies_path)
+    agg.plot_pareto_front_acc_lat(data)
+
+    agg.import_uarch_ressources(data, uarchs_ressources_path)
+    agg.plot_pareto_front_ress_lat(data)
 
     # Combined plot
     # combined_png = out_dir / "combined_latency_by_tpg.png"
