@@ -2,6 +2,7 @@
 
 # Default value
 mini_config=0
+slurm=false
 
 # Parse optional argument --mini_config=VALUE
 for arg in "$@"; do
@@ -14,8 +15,23 @@ for arg in "$@"; do
             target="${arg#*=}"
             shift
             ;;
+        --slurm=*)
+            slurm="${arg#*=}"
+            shift
+            ;;
     esac
 done
+
+# =========================
+# Validate slurm flag
+# =========================
+case "$slurm" in
+    true|false) ;;
+    *)
+        echo "Error: --slurm must be 'true' or 'false'"
+        exit 1
+        ;;
+esac
 
 # If no target provided, prompt the user (fail in non-interactive shells)
 if [ -z "$target" ]; then
@@ -85,18 +101,32 @@ for container in "${container_defs[@]}"; do
     fi
 done
 
-log "Using mini_config=$mini_config, target=$target_file, config=$selected_config"
-log "Start pipeline with nextflow"
+# =========================
+# Apptainer bind options
+# =========================
+apptainer_binds=()
+
+if [ "$slurm" = "true" ]; thenlog"Running in SLURM mode"
+    apptainer_binds+=(
+        "--bind""/etc/munge:/etc/munge""--bind""/run/munge:/run/munge""--bind""/etc/slurm:/etc/slurm"
+    )
+elselog"Running in LOCAL mode"fi
+
+# =========================
+# Run Nextflow
+# =========================
+log "Using mini_config=$mini_config"
+log "Target=$target_file"
+log "Config=$selected_config"
 
 apptainer exec \
-    --bind /etc/munge:/etc/munge \
-    --bind /run/munge:/run/munge \
-    --bind /etc/slurm:/etc/slurm \
+    "${apptainer_binds[@]}" \
     containers/nextflow-insa.sif \
     nextflow run "$target_file" \
-    --mini_config="$mini_config" \
-    --projectRoot "$(pwd)" \
-    -c ./configs/nextflow.config \
-    -c "$selected_config" \
-    -with-report -with-dag \
-    "$@"
+        --mini_config="$mini_config" \
+        --projectRoot "$(pwd)" \
+        -c ./configs/nextflow.config \
+        -c "$selected_config" \
+        -with-report \
+        -with-dag \
+        "$@"
