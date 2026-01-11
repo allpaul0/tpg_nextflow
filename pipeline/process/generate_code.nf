@@ -15,8 +15,8 @@ process generate_code {
     """
     echo "Generating code for TPG model in ${expe_folder}"
     
-    # runs sed in-place to update the JSON value for "tpgDotPath" in the trainParams.json file to point to the out_best.dot file
-    sed -i 's/"tpgDotPath": "outLogs"/"tpgDotPath": ".\\/outLogs\\/out_best.dot"/' ./${expe_folder}/params/trainParams.json
+    # runs sed in-place to update the JSON value for "tpgDotPathTraining" in the trainParams.json file to point to the out_best.dot file
+    sed -i 's/"tpgDotPathTraining": "outLogs"/"tpgDotPathTraining": ".\\/outLogs\\/out_best.dot"/' ./${expe_folder}/params/trainParams.json
     
     # run the code generation inside the Singularity container
     apptainer exec --bind ${expe_folder}/params:/params/ --bind ${expe_folder}/outLogs:/outLogs/ ${params.projectRoot}/containers/gegelati-armlearn.sif /bin/bash -c "cd / && cp armlearn-wrapper/params/AllTarget.csv /params/. && cp armlearn-wrapper/params/ValidationTrajectories.txt /params/. && ./armlearn-wrapper/build/CodeGen && rm /params/AllTarget.csv /params/ValidationTrajectories.txt"
