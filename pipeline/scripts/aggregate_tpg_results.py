@@ -307,7 +307,7 @@ class TPGResultsAggregator:
 
         isa = self.reverse_replace_xpulp_extensions(isa)
         isa = isa.replace("_zicsr", "")
-        isa = isa.replace("_zmmul", "_z")
+        #isa = isa.replace("_zmmul", "_z")
         return isa
 
     def assign_simulator_nickname(self, simulator: str) -> str:
@@ -332,7 +332,7 @@ class TPGResultsAggregator:
         simulator = simulator.replace("e4x_em1", "e4x_em4d2") # change mult -> basé ressources, ajoute div
         simulator = simulator.replace("e4x_em2", "e4x_em4d0") # change mult -> basé ressources, ajoute div
 
-        simulator = simulator.replace("e4px", "e4x_im4d2") # ajout mult -> basé ressources
+        simulator = simulator.replace("e4px", "e4x_im5d2") # ajout mult dsp -> basé ressources
 
         # e2_i-em0-3 -> add div
         simulator = simulator.replace("e2_im0", "e2_im0d1")
@@ -1212,12 +1212,12 @@ class TPGResultsAggregator:
 
             "e4_im0d0",
             "e4_im4d0",
-
             "e4_im4d2",
             
-            "e4_im4d2_pulp",
-            "e4_im4d2_fpu",
-            "e4_im4d2_pulp_fpu",
+            "e4_im5d2",
+            "e4_im5d2_pulp",
+            "e4_im5d2_fpu",
+            "e4_im5d2_pulp_fpu",
         ]
 
         # Map each string to its order index
@@ -1865,6 +1865,22 @@ class TPGResultsAggregator:
             }
 
         colors = np.array([(*color_map[c][:3], 0.6) for c in categories])
+
+        # Assign markers based on microarchitecture prefixes
+        marker_map = {
+            'e2_em': '^',   # triangle up
+            'e2_im': 'o',   # circle
+            'e4_em': '*',   # star
+            'e4_im': 's',   # square
+        }
+
+        def get_marker(uarch: str):
+            for prefix, marker in marker_map.items():
+                if uarch.startswith(prefix):
+                    return marker
+            return 'o'  # default marker
+
+        
         
         # Combine X and Y into a cost matrix
         costs = np.column_stack((X, Y))
@@ -1890,8 +1906,12 @@ class TPGResultsAggregator:
         # Create the plot
         plt.figure(figsize=(10, 7))
 
-        # Plot all points
-        plt.scatter(X[~pareto_mask],Y[~pareto_mask], c=colors[~pareto_mask], alpha=0.6, s=50, label='Dominated solutions', zorder=1)
+        markers = [get_marker(meta["uarch"]) for meta in points_meta]
+
+        for x, y, c, m, is_p in zip(X, Y, colors, markers, pareto_mask):
+            if not is_p:
+                plt.scatter(x, y, c=[c], marker=m, alpha=0.6, s=50, label='_nolegend_', zorder=1)
+
 
          # Plot Pareto front points
         pareto_colors = [
@@ -1899,7 +1919,12 @@ class TPGResultsAggregator:
             for c, is_pareto in zip(categories, pareto_mask)
             if is_pareto
         ]
-        plt.scatter(pareto_X, pareto_Y, c=pareto_colors, s=100, label='Pareto front', zorder=3, edgecolors=pareto_colors, linewidth=1.5)
+        
+        pareto_markers = [get_marker(meta["uarch"]) for meta, is_p in zip(points_meta, pareto_mask) if is_p]
+
+        for x, y, c, m in zip(pareto_X, pareto_Y, pareto_colors, pareto_markers):
+            plt.scatter(x, y, c=[c], marker=m, s=100, edgecolors=[c], linewidth=1.5, label='_nolegend_', zorder=3)
+
 
         # Connect Pareto front points with a line
         plt.plot(pareto_X_sorted, pareto_Y_sorted, 'r--', linewidth=2, alpha=0.7, zorder=2)
@@ -1940,12 +1965,12 @@ class TPGResultsAggregator:
 
             "e4_im0d0",
             "e4_im4d0",
-
             "e4_im4d2",
-            
-            "e4_im4d2_pulp",
-            "e4_im4d2_fpu",
-            "e4_im4d2_pulp_fpu",
+
+            "e4_im5d2",
+            "e4_im5d2_pulp",
+            "e4_im5d2_fpu",
+            "e4_im5d2_pulp_fpu",
         ]
 
         # Map each string to its order index
@@ -1959,13 +1984,12 @@ class TPGResultsAggregator:
             )
 
         # Sort categories
-        sorted_cats = sorted(unique_cats, key=legend_sort_key)
-
+        sorted_cats = sorted(unique_cats, key=legend_sort_key)        
 
         uarch_isa_elements = [
             Line2D(
                 [0], [0],
-                marker='o',
+                marker=get_marker(uarch),
                 linestyle='',
                 markerfacecolor=color_map[(uarch, isa)],
                 markeredgewidth=0,      # no outline
@@ -2081,15 +2105,16 @@ class TPGResultsAggregator:
 
         for file in nbInstr_json_files:
             # find canonical tpg name 
-            (tpg, seed) = canonicalize_tpg_dir(file)
+            print(file)
+            #(tpg, seed) = self.canonicalize_tpg_dir(file)
             
 
         for file in nbInstr_json_files:
             self.parse_tpgInfos(file)
 
-        for tpg, uarch_map in data.items():
-            for uarch, isa_map in uarch_map.items():
-                for isa, archgroup in isa_map.items():
+        # for tpg, uarch_map in data.items():
+        #     for uarch, isa_map in uarch_map.items():
+        #         for isa, archgroup in isa_map.items():
 
 
 
@@ -2122,11 +2147,11 @@ def main(argv: Optional[List[str]]=None):
     # agg.plot_x_axis_uarchs_y_axis_all_tpgs(data)
 
     agg.import_tpg_accuracies(data, csv_accuracies_path)
-    #agg.plot_pareto_front_acc_lat(data)
+    agg.plot_pareto_front_acc_lat(data)
 
     agg.import_uarch_ressources(data, uarchs_ressources_path)
-    # agg.assign_normalized_ressources(data)
-    # agg.plot_pareto_front_ress_lat(data)
+    agg.assign_normalized_ressources(data)
+    agg.plot_pareto_front_ress_lat(data)
 
 
     # Building IPC analysis 
@@ -2137,7 +2162,7 @@ def main(argv: Optional[List[str]]=None):
     # 2. Enrich the data dict with IPC informations 
     # nbInstr infos are tpg dependent. 
     # data[tpg][uarch][isa] -> will not vary for uarch and isa
-    agg.import_tpg_nbInstr(nbInstr_json_files)
+    #agg.import_tpg_nbInstr(data, nbInstr_json_files)
 
     # 3. plot 
 
