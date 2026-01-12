@@ -9,11 +9,15 @@ nextflow.enable.dsl=2
 
 workflow {
     def ch_trained_TPGs = Channel.fromPath(params.trained_TPGs_path, type: 'dir')
+
+    if (params.mini_config != 0) {
+        ch_trained_TPGs = ch_trained_TPGs.take(params.mini_config)
+    }
     //.filter{ dir ->dir.resolve("outLogs/codegen").exists()}
 
-    generated_codes = generate_code(ch_trained_TPGs)
+    //generated_codes = generate_code(ch_trained_TPGs)
 
-    exported_LE_states = export_LE_states(generated_codes)
+    exported_LE_states = export_LE_states(ch_trained_TPGs)
     
     //built_executables = build_executables(ch_trained_TPGs)
 }
