@@ -106,11 +106,17 @@ done
 # =========================
 apptainer_binds=()
 
-if [ "$slurm" = "true" ]; thenlog"Running in SLURM mode"
+if [ "$slurm" = "true" ]; then
+    log "Running in SLURM mode"
     apptainer_binds+=(
-        "--bind""/etc/munge:/etc/munge""--bind""/run/munge:/run/munge""--bind""/etc/slurm:/etc/slurm"
+        "--bind" "/etc/munge:/etc/munge"
+        "--bind" "/run/munge:/run/munge"
+        "--bind" "/etc/slurm:/etc/slurm"
     )
-elselog"Running in LOCAL mode"fi
+
+else
+    log "Running in LOCAL mode"
+fi
 
 # =========================
 # Run Nextflow
@@ -118,6 +124,8 @@ elselog"Running in LOCAL mode"fi
 log "Using mini_config=$mini_config"
 log "Target=$target_file"
 log "Config=$selected_config"
+log "Apptainer will bind: ${apptainer_binds[*]}"
+
 
 apptainer exec \
     "${apptainer_binds[@]}" \
