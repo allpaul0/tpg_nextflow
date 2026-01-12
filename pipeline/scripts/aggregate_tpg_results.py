@@ -45,9 +45,9 @@ class Uarch_Ressources:
 class SeedResult:
     mean: float
     stddev: float
-    source_file: Path
     seed: int
-    tpg_dir_name: str
+    source_file: Optional[Path] = None
+    tpg_dir_name: Optional[str] = None
 
 @dataclass
 class ArchGroup:
@@ -60,6 +60,7 @@ class ArchGroup:
     seeds: List[SeedResult]
     accuracy: Optional[float] = None
     uarch_ressources: Optional[Uarch_Ressources] = None 
+    norm_ressource: Optional[float] = None
 
 # -----------------------------
 # Helpers
@@ -131,6 +132,7 @@ class TPGResultsAggregator:
         # Return the original config paths
         return list(map(lambda k: config_map[k], missing_keys))
 
+    # START LOADING SECTION
 
     def find_json_files(self, folder_type) -> List[Path]:
         """
@@ -190,6 +192,31 @@ class TPGResultsAggregator:
             "tpg_mean_latency": mean_val,
             "tpg_stddev_latency": std_val,
         }
+
+    def find_nbInstr_json_files(self) -> List[Path]:
+        """
+        Find JSON files under root/training_results/*/outLogs/precalcul/executionInfos.json        
+        """
+      
+        files = []
+        base = self.root / "training_results"
+        if not base.exists():
+            raise FileNotFoundError(f"Expected training_results under {self.root}, not found.")
+        # Walk the tree under training_results
+        for tpg_dir in base.iterdir():
+            # Expect tpg_dir to be directories like ..._seed-0_instrType-float
+            if not tpg_dir.is_dir():
+                continue
+            precalcul_files = tpg_dir / "outLogs" / "precalcul"
+            if not precalcul_files.exists() or not precalcul_files.is_dir():
+                continue
+            for json_file in precalcul_files.glob("executionInfos.json"):
+                files.append(json_file)
+
+        print(f"{len(files)}" + " files")
+        return files
+
+    # END LOADING SECTION
     
     def assign_iset_function_nickname(self, tpg_canonical: str) -> str:
         """
@@ -297,11 +324,11 @@ class TPGResultsAggregator:
         simulator = simulator.replace("corev_pulp", "pulp") # simplifie
                
         # e4x_i-em0,1,2 -> renommage
-        simulator = simulator.replace("e4x_im0", "e4x_im0d2") # ajoute div
+        simulator = simulator.replace("e4x_im0", "e4x_im0d0") #  pas de mult, pas de div
         simulator = simulator.replace("e4x_im1", "e4x_im4d2") # change mult -> basé ressources, ajoute div
         simulator = simulator.replace("e4x_im2", "e4x_im4d0") # change mult -> basé ressources, ajoute div
 
-        simulator = simulator.replace("e4x_em0", "e4x_em0d2") # ajoute div
+        simulator = simulator.replace("e4x_em0", "e4x_em0d0") # pas de mult, pas de div
         simulator = simulator.replace("e4x_em1", "e4x_em4d2") # change mult -> basé ressources, ajoute div
         simulator = simulator.replace("e4x_em2", "e4x_em4d0") # change mult -> basé ressources, ajoute div
 
@@ -378,9 +405,9 @@ class TPGResultsAggregator:
             seed_result = SeedResult(
                 mean=minimal["tpg_mean_latency"],
                 stddev=minimal["tpg_stddev_latency"],
-                source_file=jf,
-                seed = seed,
-                tpg_dir_name = tpg_dir_name
+                seed = seed
+                #source_file=jf,
+                #tpg_dir_name = tpg_dir_name
             )
             data[tpg_canonical][simulator_nickname][isa_nickname].seeds.append(seed_result)
 
@@ -1179,11 +1206,11 @@ class TPGResultsAggregator:
             "e2_im2d1",
             "e2_im3d1",
             
-            "e4_em0d2",
+            "e4_em0d0",
             "e4_em4d0",
             "e4_em4d2",
 
-            "e4_im0d2",
+            "e4_im0d0",
             "e4_im4d0",
 
             "e4_im4d2",
@@ -1467,7 +1494,7 @@ class TPGResultsAggregator:
             for i, cat in enumerate(unique_cats)
         }
 
-        colors = np.array([color_map[c] for c in categories])
+        colors = np.array([(*color_map[c][:3], 0.6) for c in categories])
 
         # Combine X and Y into a cost matrix
         costs = np.column_stack((X, Y))
@@ -1585,7 +1612,7 @@ class TPGResultsAggregator:
 
         pareto_header = Line2D(
             [], [], linestyle='none',
-            label="Pareto-efficient uarch | ISA"
+            label="Pareto-efficient uarch | isa"
         )
 
 
@@ -1644,19 +1671,434 @@ class TPGResultsAggregator:
                             dsps=n_dsps,
                             regs=n_regs,
                             luts=n_luts,
-                        )
+                        )   
+
+    def find_biggest_uarch_ressources(self, data):
+        """
+        Find the uarch with the maximum DSPs, LUTs, and Regs.
+        The uarch retunned dominates in all three ressources.
+        """
+        max_dsps = 0
+        max_luts = 0
+        max_regs = 0
+        max_uarch_name = ""
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                for isa, archgroup in sorted(isa_map.items()):
+                    if archgroup.uarch_ressources is not None:
+                        res = archgroup.uarch_ressources
+                        if res.dsps > max_dsps and res.luts > max_luts and res.regs > max_regs:
+                            max_dsps = res.dsps
+                            max_luts = res.luts
+                            max_regs = res.regs
+                            max_uarch_name = uarch
+
+        print(f"Biggest uarch is {max_uarch_name} with DSPs: {max_dsps}, LUTs: {max_luts}, REGs: {max_regs}")
+
+        return max_dsps, max_luts, max_regs
+
+    def assign_normalized_ressources(self, data):
+        """
+        Assign normalized ressources to each archgroup based on the biggest uarch ressources.
+        """
+        max_dsps, max_luts, max_regs = self.find_biggest_uarch_ressources(data)
+        if max_dsps == 0 or max_luts == 0 or max_regs == 0:
+            print("WARNING: One of the maximum ressources is zero, cannot normalize.")
+            return
+
+        # normalize 
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                for isa, archgroup in sorted(isa_map.items()):
+                    if archgroup.uarch_ressources is not None:
+                        res = archgroup.uarch_ressources
+                        norm_dsps = res.dsps / max_dsps    
+                        norm_luts = res.luts / max_luts
+                        norm_regs = res.regs / max_regs
+                        archgroup.norm_ressource = norm_dsps + norm_luts + norm_regs
+
+
+    def select_best_isa_per_uarch(self, data):
+        """
+        For each (tpg, uarch), keep only the ISA with the best (lowest) mean latency.
+        Returns a new data dict with the same structure.
+        """
+        filtered_data = {}
+
+        for tpg, uarch_map in data.items():
+            filtered_data[tpg] = {}
+
+            for uarch, isa_map in uarch_map.items():
+                best_isa = None
+                best_latency = float("inf")
+
+                for isa, archgroup in isa_map.items():
+                    if not archgroup.seeds:
+                        continue
+
+                    seed_means = [s.mean for s in archgroup.seeds]
+                    latency = mean(seed_means)
+
+                    if latency < best_latency:
+                        best_latency = latency
+                        best_isa = isa
+
+                if best_isa is not None:
+                    filtered_data[tpg][uarch] = {
+                        best_isa: isa_map[best_isa]
+                    }
+
+        return filtered_data
+
+
+    def select_best_isa_for_all_uarchs(self, data):
+        """
+        For each uarch, find the ISA with the lowest latency (mean over its seeds)
+        across ALL tpgs, then keep only that ISA for every tpg.
+        """
+        # Step 1: collect latencies per (uarch, isa)
+        latency_by_uarch_isa = defaultdict(list)
+
+        for tpg, uarch_map in data.items():
+            for uarch, isa_map in uarch_map.items():
+                for isa, archgroup in isa_map.items():
+                    if not archgroup.seeds:
+                        continue
+
+                    latency = mean(s.mean for s in archgroup.seeds)
+                    latency_by_uarch_isa[(uarch, isa)].append(latency)
+
+        # Step 2: find best ISA per uarch, lowest latency over all tpgs
+        best_isa_per_uarch = {}
+
+        for (uarch, isa), latencies in latency_by_uarch_isa.items():
+
+            for latency in latencies:
+                if latency is None:
+                    continue
+                if uarch not in best_isa_per_uarch:
+                    best_isa_per_uarch[uarch] = (isa, latency)
+                else:
+                    _, best_latency = best_isa_per_uarch[uarch]
+                    if latency < best_latency:
+                        best_isa_per_uarch[uarch] = (isa, latency)
+
+        # Step 3: filter data using the selected ISA per uarch
+        filtered_data = {}
+
+        for tpg, uarch_map in data.items():
+            filtered_data[tpg] = {}
+
+            for uarch, isa_map in uarch_map.items():
+                if uarch not in best_isa_per_uarch:
+                    continue
+
+                best_isa = best_isa_per_uarch[uarch][0]
+
+                if best_isa in isa_map:
+                    filtered_data[tpg][uarch] = {
+                        best_isa: isa_map[best_isa]
+                    }
+
+        return filtered_data
+
+    def plot_pareto_front_ress_lat(self, data):
+
+        data = self.select_best_isa_for_all_uarchs(data)
+
+        ressources = []
+        latencies = []
+        points_meta = []   # full provenance per point
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                for isa, archgroup in sorted(isa_map.items()):
+                    if archgroup.norm_ressource is not None:
+                        ressources.append(archgroup.norm_ressource)
+
+                        #overall mean for this [tpg][uarch][isa] taking each seed into account (no stddev used)
+                        seed_means = [s.mean for s in archgroup.seeds]
+                        latencies.append(mean(seed_means)) 
+                        points_meta.append({
+                            "tpg": tpg,
+                            "uarch": uarch,
+                            "isa": isa,
+                            "iset": archgroup.iset,
+                            "dtype": archgroup.dtype,
+                        })
+
+        X = np.array(ressources)
+        Y = np.array(latencies)
+
+             
+        categories = [(m["uarch"], m["isa"]) for m in points_meta]
+        unique_cats = list(dict.fromkeys(categories))
+
+        if len(unique_cats) > 20:
+            cmaps = [
+                plt.get_cmap("tab20"),
+                plt.get_cmap("tab20b"),
+                plt.get_cmap("tab20c"),
+            ]
+
+            def get_qualitative_colors(n):
+                colors = []
+                for cmap in cmaps:
+                    for i in range(cmap.N):
+                        colors.append(cmap(i))
+                        if len(colors) >= n:
+                            return colors
+                raise ValueError("Not enough colors")
+
+            colors = get_qualitative_colors(20)
+
+            color_map = {
+                cat: colors[i]
+                for i, cat in enumerate(unique_cats)
+            }
+        else:
+            cmap = plt.get_cmap('tab20')
+        color_map = {
+                cat: cmap(i % cmap.N)
+                for i, cat in enumerate(unique_cats)
+            }
+
+        colors = np.array([(*color_map[c][:3], 0.6) for c in categories])
+        
+        # Combine X and Y into a cost matrix
+        costs = np.column_stack((X, Y))
+
+        # Find Pareto-efficient points
+        pareto_mask = self.is_pareto_efficient(costs)
+        pareto_X = X[pareto_mask]
+        pareto_Y = Y[pareto_mask]
+
+        pareto_points = [
+            meta
+            for meta, is_pareto in zip(points_meta, pareto_mask)
+            if is_pareto
+        ]
+
+        pareto_colors = [ color_map[c] for c, is_pareto in zip(categories, pareto_mask) if is_pareto ]
+
+        # Sort Pareto points for proper line plotting
+        sort_idx = np.argsort(pareto_X)
+        pareto_X_sorted = pareto_X[sort_idx]
+        pareto_Y_sorted = pareto_Y[sort_idx]
+
+        # Create the plot
+        plt.figure(figsize=(10, 7))
+
+        # Plot all points
+        plt.scatter(X[~pareto_mask],Y[~pareto_mask], c=colors[~pareto_mask], alpha=0.6, s=50, label='Dominated solutions', zorder=1)
+
+         # Plot Pareto front points
+        pareto_colors = [
+            color_map[c]
+            for c, is_pareto in zip(categories, pareto_mask)
+            if is_pareto
+        ]
+        plt.scatter(pareto_X, pareto_Y, c=pareto_colors, s=100, label='Pareto front', zorder=3, edgecolors=pareto_colors, linewidth=1.5)
+
+        # Connect Pareto front points with a line
+        plt.plot(pareto_X_sorted, pareto_Y_sorted, 'r--', linewidth=2, alpha=0.7, zorder=2)
+
+        print("pareto ressource ", pareto_X_sorted)
+        print("pareto latencies ", pareto_Y_sorted)
+
+        # Styling
+        plt.xlabel('Ressources (X)', fontsize=12, fontweight='bold')
+        plt.ylabel('Latency (Y)', fontsize=12, fontweight='bold')
+        plt.title('Pareto Front Visualization', fontsize=14, fontweight='bold')
+        plt.legend(fontsize=11, loc='upper right')
+        plt.grid(True, alpha=0.3, linestyle='--')
+        plt.tight_layout()
+
+        # Add arrow annotations to show the improvement direction
+        # plt.annotate('', xy=(1, 1), xytext=(3, 3), arrowprops=dict(arrowstyle='->', lw=2, color='green', alpha=0.6))
+        # plt.text(2.5, 2.5, 'Better', fontsize=10, color='green', fontweight='bold', ha='center')
+
+        plt.yscale('log')
+
+        from matplotlib.lines import Line2D
+
+        uarch_custom_order = [
+            "e2_em0d1",
+            "e2_em1d1",
+            "e2_em2d1",
+            "e2_em3d1",
+            
+            "e2_im0d1",
+            "e2_im1d1",
+            "e2_im2d1",
+            "e2_im3d1",
+            
+            "e4_em0d0",
+            "e4_em4d0",
+            "e4_em4d2",
+
+            "e4_im0d0",
+            "e4_im4d0",
+
+            "e4_im4d2",
+            
+            "e4_im4d2_pulp",
+            "e4_im4d2_fpu",
+            "e4_im4d2_pulp_fpu",
+        ]
+
+        # Map each string to its order index
+        uarch_order_index = {s: i for i, s in enumerate(uarch_custom_order)}    
+
+        def legend_sort_key(cat):
+            uarch, isa = cat
+            return (
+                uarch_order_index.get(uarch, len(uarch_custom_order)),
+                isa  
+            )
+
+        # Sort categories
+        sorted_cats = sorted(unique_cats, key=legend_sort_key)
+
+
+        uarch_isa_elements = [
+            Line2D(
+                [0], [0],
+                marker='o',
+                linestyle='',
+                markerfacecolor=color_map[(uarch, isa)],
+                markeredgewidth=0,      # no outline
+                label=f"{uarch}, {isa}",
+                markersize=9,
+            )
+            for (uarch, isa) in sorted_cats
+        ]
+
+        pareto_iset_dtype_groups = defaultdict(list)
+
+        for meta in pareto_points:
+            key = (meta["iset"], meta["dtype"])
+            pareto_iset_dtype_groups[key].append((meta["uarch"], meta["isa"]))
+
+        pareto_iset_dtype_elements = []
+        
+        for (iset, dtype), uarch_isa_list in pareto_iset_dtype_groups.items():
+            for i, (uarch, isa) in enumerate(uarch_isa_list):
+                pareto_iset_dtype_elements.append(
+                    Line2D(
+                        [0], [0],
+                        marker='o',
+                        linestyle='',
+                        markerfacecolor=color_map[(uarch, isa)],
+                        markeredgewidth=0,
+                        markersize=9,
+                        label=f'{iset} | {dtype}' 
+                    )
+                )
+
+        uarch_header = Line2D(
+            [], [], linestyle='none',
+            label="uarch | isa"
+        )
+
+        pareto_header = Line2D(
+            [], [], linestyle='none',
+            label="Pareto-efficient iset | dtype"
+        )
+
+
+        legend_elements = (
+            [uarch_header]
+            + uarch_isa_elements
+            + [Line2D([], [], linestyle='none', label="")]  # spacer
+            + [pareto_header]
+            + pareto_iset_dtype_elements
+        )
+
+        plt.legend(
+            handles=legend_elements,
+            fontsize=9,
+            loc='best',
+            frameon=True,
+            handlelength=1.2,
+            handletextpad=0.6
+        )
+        
+        plt.show()
+
+        # Print statistics
+        print(f"Total points: {len(X)}")
+        print(f"Pareto-efficient points: {np.sum(pareto_mask)}")
+        print(f"Percentage on Pareto front: {100 * np.sum(pareto_mask) / len(X):.1f}%")
+
+    
+
+    def parse_tpgInfos(path_to_file: str):
+        """
+        Parse executioninfos.json to extract unique traceGroup entries
+        based on their traceTeamIds. Used to calculate the TPG IPC. 
+        """
+
+        # Load the JSON file
+        with open(path_to_file, "r") as f:
+            data = json.load(f)
+
+        # Result: keys = traceTeamIds, values = one representative traceGroup
+        trace_groups = {}
+
+        for node_id, entry in data.items():
+            trace_team_ids = entry["traceTeamIds"]
+
+            # If we haven't seen this traceTeamIds yet, store it
+            if trace_team_ids not in trace_groups:
+                trace_groups[trace_team_ids] = {
+                    "traceTeamIds": trace_team_ids,
+                    "nbEvaluatedPrograms": entry["nbEvaluatedPrograms"],
+                    "nbEvaluatedTeams": entry["nbEvaluatedTeams"],
+                    "nbExecutionForEachInstr": entry["nbExecutionForEachInstr"],
+                    # optional: keep track of which original keys belong to this group
+                    "sourceNodeIds": [node_id],
+                }
+            else:
+                # Same traceTeamIds → same data, just record provenance if desired
+                trace_groups[trace_team_ids]["sourceNodeIds"].append(node_id)
+
+        print(trace_groups)
+
+        # trace_groups now contains the fully factored representation
+
+    def import_tpg_nbInstr(self, data, nbInstr_json_files):
+        """
+        for each executionInfos:
+            find the corresponding tpg canonical name
+        for each executionInfos:
+            associate the tpg name to a dict of trace_groups (parse_tpgInfos)
+        for each executionInfos:
+            find the corresponding place in the data dict using the 
+            tpg canonical name 
+        """
+
+        for file in nbInstr_json_files:
+            # find canonical tpg name 
+            (tpg, seed) = canonicalize_tpg_dir(file)
+            
+
+        for file in nbInstr_json_files:
+            self.parse_tpgInfos(file)
+
+        for tpg, uarch_map in data.items():
+            for uarch, isa_map in uarch_map.items():
+                for isa, archgroup in isa_map.items():
+
+
 
 # -----------------------------
 # CLI / main
 # -----------------------------
 
 def main(argv: Optional[List[str]]=None):
-    parser = argparse.ArgumentParser(description="Aggregate TPG inference JSON results.")
-    parser.add_argument("--root", type=str, default=".", help="Root path containing training_results (default: .)")
-    parser.add_argument("--out", type=str, default="results_out", help="Output directory for CSV and plots.")
-    args = parser.parse_args(argv)
-
-    agg = TPGResultsAggregator(args.root, args.out)
+    agg = TPGResultsAggregator("tpg_expe", "results_out")
 
     json_config_files = agg.find_json_files("configs")
     json_result_files = agg.find_json_files("results")
@@ -1680,10 +2122,25 @@ def main(argv: Optional[List[str]]=None):
     # agg.plot_x_axis_uarchs_y_axis_all_tpgs(data)
 
     agg.import_tpg_accuracies(data, csv_accuracies_path)
-    agg.plot_pareto_front_acc_lat(data)
+    #agg.plot_pareto_front_acc_lat(data)
 
     agg.import_uarch_ressources(data, uarchs_ressources_path)
-    agg.plot_pareto_front_ress_lat(data)
+    # agg.assign_normalized_ressources(data)
+    # agg.plot_pareto_front_ress_lat(data)
+
+
+    # Building IPC analysis 
+
+    # 1. get a list of path towards nbInstr json files 
+    nbInstr_json_files = agg.find_nbInstr_json_files()
+
+    # 2. Enrich the data dict with IPC informations 
+    # nbInstr infos are tpg dependent. 
+    # data[tpg][uarch][isa] -> will not vary for uarch and isa
+    agg.import_tpg_nbInstr(nbInstr_json_files)
+
+    # 3. plot 
+
 
     # Combined plot
     # combined_png = out_dir / "combined_latency_by_tpg.png"
@@ -1699,8 +2156,6 @@ def main(argv: Optional[List[str]]=None):
     #for isa in df["isa"].unique():
     #    print(isa)
     print(f"SUMMARY: TPGs={n_tpgs}, architectures={n_archs}, total_rows={len(df)}")
-
-# python3 pipeline/scripts/aggregate_tpg_results.py --root tpg_expe --out results_out
 
 if __name__ == "__main__":
     main()
