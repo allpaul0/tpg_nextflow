@@ -2179,7 +2179,192 @@ class TPGResultsAggregator:
                         archgroup.seeds[seed].avg_nb_evaluated_programs = avg_nb_evaluated_programs
                         archgroup.seeds[seed].avg_nb_evaluated_teams = avg_nb_evaluated_teams
 
-    
+    def plot_tpg_ipc_all_uarch_one_plot_each(self, data):
+        """
+        Plot IPC per TPG, with one figure per uarch.
+        """
+        from statistics import mean
+        import matplotlib.pyplot as plt
+
+        # Organize data by uarch
+        uarch_tpg_ipc = {}
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                if uarch not in uarch_tpg_ipc:
+                    uarch_tpg_ipc[uarch] = {"tpgs": [], "ipcs": []}
+
+                for isa, archgroup in sorted(isa_map.items()):
+                    # compute IPC for each seed and average
+                    seed_ipcs = [
+                        seed_obj.avg_nb_instr / seed_obj.mean
+                        for seed_obj in archgroup.seeds
+                        if seed_obj.avg_nb_instr is not None
+                        and seed_obj.mean is not None
+                        and seed_obj.mean > 0
+                    ]
+                    if seed_ipcs:
+                        avg_ipc = mean(seed_ipcs)
+                        uarch_tpg_ipc[uarch]["tpgs"].append(f"{archgroup.iset} {archgroup.dtype}")
+                        uarch_tpg_ipc[uarch]["ipcs"].append(avg_ipc)
+
+        # Plot one figure per uarch
+        for uarch, vals in uarch_tpg_ipc.items():
+            tpgs = vals["tpgs"]
+            ipcs = vals["ipcs"]
+
+            plt.figure(figsize=(10, 7))
+            plt.bar(tpgs, ipcs, color='skyblue')
+            plt.xlabel('TPG', fontsize=12, fontweight='bold')
+            plt.ylabel('IPC', fontsize=12, fontweight='bold')
+            plt.title(f'IPC per TPG on {uarch}', fontsize=14, fontweight='bold')
+            plt.xticks(rotation=45, ha='right')
+            plt.grid(axis='y', alpha=0.3, linestyle='--')
+
+            # Give extra space for long x labels
+            plt.subplots_adjust(bottom=0.35)
+
+            plt.tight_layout()
+            plt.show()
+
+    def plot_tpg_ipc_across_uarchs_one_plot(self, data):
+        """
+        Plot IPC per TPG, all uarches on the same figure,
+        using one color per uarch, ordered by iset then dtype (fixedpt before float).
+        """
+        from statistics import mean
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        # --- custom iset order ---
+        iset_custom_order = [
+            "{*,/,>,-,+}",
+            "{log,exp,*,/,>,-,+}",
+            "{trig,*,/,>,-,+}",
+            "{trig,log,exp,*,/,>,-,+}",
+            "{log2,exp2,>,-,+}",
+            "{log2,exp2,*,>,-,+}",
+            "{log2,exp2,*,/,>,-,+}",
+        ]
+        iset_order_index = {s: i for i, s in enumerate(iset_custom_order)}
+
+        # Collect IPCs per uarch per TPG
+        uarch_tpg_ipc = {}
+        all_tpgs_set = set()  # use set first to avoid duplicates
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                if uarch not in uarch_tpg_ipc:
+                    uarch_tpg_ipc[uarch] = {}
+
+                for isa, archgroup in sorted(isa_map.items()):
+                    tpg_label = f"{archgroup.iset} {archgroup.dtype}"
+                    all_tpgs_set.add(tpg_label)
+
+                    seed_ipcs = [
+                        seed_obj.avg_nb_instr / seed_obj.mean
+                        for seed_obj in archgroup.seeds
+                        if seed_obj.avg_nb_instr is not None
+                        and seed_obj.mean is not None
+                        and seed_obj.mean > 0
+                    ]
+
+                    if seed_ipcs:
+                        uarch_tpg_ipc[uarch][tpg_label] = mean(seed_ipcs)
+
+        # Sort all_tpgs by dtype (fixedpt before float), then iset order
+        def tpg_sort_key(tpg_label):
+            iset, dtype = tpg_label.split(" ", 1)
+            dtype_order = 0 if "fixedpt" in dtype.lower() else 1
+            iset_index = iset_order_index.get(iset, 999)  # unknown isets go last
+            return (dtype_order, iset_index, iset)
+
+        all_tpgs = sorted(all_tpgs_set, key=tpg_sort_key)
+
+        # --- Filter uarches to exclude "_em" ---
+        filtered_uarches = [
+            (uarch, tpg_ipcs)
+            for uarch, tpg_ipcs in sorted(uarch_tpg_ipc.items())
+            if "_em" not in uarch
+        ]
+
+        num_uarches = len(filtered_uarches)
+        bar_width = 0.95 / num_uarches
+
+        # Plot
+        fig, ax = plt.subplots(figsize=(18, 10))
+        x = np.arange(len(all_tpgs))
+
+        for i, (uarch, tpg_ipcs) in enumerate(filtered_uarches):
+            ipcs = [tpg_ipcs.get(tpg, 0) for tpg in all_tpgs]
+            ax.bar(
+                x + i * bar_width,
+                ipcs,
+                width=bar_width,
+                label=uarch
+            )
+
+        ax.set_xlabel("TPG", fontsize=14, fontweight="bold")
+        ax.set_ylabel("IPC", fontsize=14, fontweight="bold")
+        ax.set_title("IPC per TPG across uarches", fontsize=16, fontweight="bold")
+
+        ax.set_xticks(x + bar_width * (num_uarches - 1) / 2)
+        ax.set_xticklabels(all_tpgs, rotation=45, ha="right")
+
+        ax.grid(axis="y", alpha=0.3, linestyle="--")
+        ax.legend(title="uarch", fontsize=12, title_fontsize=13)
+
+        plt.subplots_adjust(bottom=0.35)
+        plt.tight_layout()
+        plt.show()
+
+
+    def plot_tpg_ipc_all_uarch_averaged(self, data):
+        """
+        Plot a single figure: average IPC per TPG across all uarchs that implement it.
+        """
+        from statistics import mean
+        import matplotlib.pyplot as plt
+        from collections import defaultdict
+
+        # Step 1: Collect IPCs per TPG per uarch
+        tpg_uarch_ipc = defaultdict(list)
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                for isa, archgroup in sorted(isa_map.items()):
+                    # compute IPC for each seed
+                    seed_ipcs = [
+                        seed_obj.avg_nb_instr / seed_obj.mean
+                        for seed_obj in archgroup.seeds
+                        if seed_obj.avg_nb_instr is not None
+                        and seed_obj.mean is not None
+                        and seed_obj.mean > 0
+                    ]
+                    if seed_ipcs:
+                        avg_ipc = mean(seed_ipcs)
+                        tpg_uarch_ipc[archgroup.iset + " " + archgroup.dtype].append(avg_ipc)
+
+        # Step 2: Average IPC per TPG over uarchs implementing it
+        tpg_avg_ipc = {}
+        for tpg, ipc_list in tpg_uarch_ipc.items():
+            tpg_avg_ipc[tpg] = sum(ipc_list) / len(ipc_list)
+
+        # Step 3: Prepare for plotting
+        tpgs = sorted(tpg_avg_ipc.keys())
+        ipcs = [tpg_avg_ipc[tpg] for tpg in tpgs]
+
+        # Step 4: Plot
+        plt.figure(figsize=(12, 6))
+        plt.bar(tpgs, ipcs, color='skyblue')
+        plt.xlabel('TPG', fontsize=12, fontweight='bold')
+        plt.ylabel('Average IPC', fontsize=12, fontweight='bold')
+        plt.title('Average IPC per TPG across all uarchs', fontsize=14, fontweight='bold')
+        plt.xticks(rotation=45, ha='right')
+        plt.grid(axis='y', alpha=0.3, linestyle='--')
+        plt.subplots_adjust(bottom=0.35)
+        plt.tight_layout()
+        plt.show()
 
     
 
@@ -2232,7 +2417,9 @@ def main(argv: Optional[List[str]]=None):
     agg.import_tpg_nbInstr(data, nbInstr_json_files)
 
     # 3. plot 
-    
+    agg.plot_tpg_ipc_all_uarch_one_plot_each(data)
+    agg.plot_tpg_ipc_across_uarchs_one_plot(data)
+    agg.plot_tpg_ipc_all_uarch_averaged(data)
 
     # Combined plot
     # combined_png = out_dir / "combined_latency_by_tpg.png"
