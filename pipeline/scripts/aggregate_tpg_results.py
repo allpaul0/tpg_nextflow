@@ -2366,7 +2366,216 @@ class TPGResultsAggregator:
         plt.tight_layout()
         plt.show()
 
-    
+
+    def plot_pareto_front_dist_lat_ress_3d(self, data):
+        """
+        3D Pareto front across:
+        - Distance to objective (minimize)
+        - Latency (minimize)
+        - Resources (minimize)
+
+        Color-coded by microarchitecture (uarch)
+        Marker-coded by (iset | dtype)
+
+        Only Pareto-dominant solutions are displayed.
+        """
+
+        from statistics import mean
+        from collections import defaultdict
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D
+        from matplotlib.lines import Line2D
+        from itertools import cycle
+
+        # ------------------------------------------------------------------
+        # Collect data
+        # ------------------------------------------------------------------
+        dists = []
+        latencies = []
+        ressources = []
+        points_meta = []
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                for isa, archgroup in sorted(isa_map.items()):
+                    if (
+                        archgroup.accuracy is not None
+                        and archgroup.norm_ressource is not None
+                        and archgroup.seeds
+                    ):
+                        dists.append(archgroup.accuracy)
+                        latencies.append(mean(s.mean for s in archgroup.seeds))
+                        ressources.append(archgroup.norm_ressource)
+
+                        points_meta.append({
+                            "tpg": tpg,
+                            "uarch": uarch,
+                            "isa": isa,
+                            "iset": archgroup.iset,
+                            "dtype": archgroup.dtype,
+                        })
+
+        X = np.array(dists)
+        Y = np.array(latencies)
+        Z = np.array(ressources)
+
+        # ------------------------------------------------------------------
+        # Pareto computation (all objectives minimized)
+        # ------------------------------------------------------------------
+        costs = np.column_stack((X, Y, Z))
+        pareto_mask = self.is_pareto_efficient(costs)
+
+        pareto_meta = [
+            meta for meta, is_p in zip(points_meta, pareto_mask) if is_p
+        ]
+
+        # ------------------------------------------------------------------
+        # Build Pareto-only semantic domains
+        # ------------------------------------------------------------------
+
+        # Unique Pareto microarchitectures (for colors)
+        pareto_uarches = list(dict.fromkeys(
+            meta["uarch"] for meta in pareto_meta
+        ))
+
+        # Unique Pareto (iset | dtype) pairs (for markers)
+        pareto_iset_dtype = list(dict.fromkeys(
+            (meta["iset"], meta["dtype"]) for meta in pareto_meta
+        ))
+
+        # ------------------------------------------------------------------
+        # Color map: microarchitecture → color (Pareto only)
+        # ------------------------------------------------------------------
+        cmap = plt.get_cmap("tab20")
+
+        color_map = {
+            uarch: cmap(i % cmap.N)
+            for i, uarch in enumerate(pareto_uarches)
+        }
+
+        # ------------------------------------------------------------------
+        # Marker map: (iset | dtype) → marker (Pareto only)
+        # ------------------------------------------------------------------
+        marker_cycle = cycle([
+            'o',  # circle
+            's',  # square
+            '^',  # triangle up
+            '*',  # star
+            'v',  # triangle down
+            'D',  # diamond
+            'P',  # plus filled
+            'X',  # x filled
+        ])
+
+        marker_map = {
+            key: next(marker_cycle)
+            for key in pareto_iset_dtype
+        }
+
+        # ------------------------------------------------------------------
+        # Plot
+        # ------------------------------------------------------------------
+        fig = plt.figure(figsize=(14, 10))
+        ax = fig.add_subplot(111, projection="3d")
+
+        # Pareto-dominant points only
+        for x, y, z, meta in zip(
+            X[pareto_mask],
+            Y[pareto_mask],
+            Z[pareto_mask],
+            pareto_meta,
+        ):
+            ax.scatter(
+                x, y, z,
+                c=[color_map[meta["uarch"]]],
+                marker=marker_map[(meta["iset"], meta["dtype"])],
+                s=130,
+                edgecolors='k',
+                linewidth=0.6,
+                depthshade=False,
+                zorder=10,
+            )
+
+        # ------------------------------------------------------------------
+        # Styling
+        # ------------------------------------------------------------------
+        ax.set_xlabel("Distance to objective ↓", fontsize=12, fontweight="bold")
+        ax.set_ylabel("Latency ↓", fontsize=12, fontweight="bold")
+        ax.set_zlabel("Resources ↓", fontsize=12, fontweight="bold")
+
+        ax.set_title(
+            "3D Pareto Front: Distance × Latency × Resources",
+            fontsize=14,
+            fontweight="bold",
+        )
+
+        ax.grid(True, alpha=0.3)
+
+        # ------------------------------------------------------------------
+        # Legend
+        # ------------------------------------------------------------------
+
+        # Iset | dtype (marker legend)
+        iset_dtype_header = Line2D([], [], linestyle='none', label="Iset | dtype")
+
+        iset_dtype_elements = [
+            Line2D(
+                [0], [0],
+                marker=marker_map[(iset, dtype)],
+                linestyle='',
+                color='black',
+                markersize=9,
+                label=f"{iset} | {dtype}",
+            )
+            for (iset, dtype) in pareto_iset_dtype
+        ]
+
+        # Microarchitecture (color legend)
+        uarch_header = Line2D([], [], linestyle='none', label="Microarchitecture")
+
+        uarch_elements = [
+            Line2D(
+                [0], [0],
+                marker='o',
+                linestyle='',
+                markerfacecolor=color_map[uarch],
+                markeredgewidth=0,
+                markersize=9,
+                label=uarch,
+            )
+            for uarch in pareto_uarches
+        ]
+
+        legend_elements = (
+            [iset_dtype_header]
+            + iset_dtype_elements
+            + [Line2D([], [], linestyle='none', label="")]
+            + [uarch_header]
+            + uarch_elements
+        )
+
+        ax.legend(
+            handles=legend_elements,
+            fontsize=9,
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1.0),
+            frameon=True,
+            handlelength=1.2,
+            handletextpad=0.6,
+        )
+
+        plt.tight_layout()
+        plt.show()
+
+        # ------------------------------------------------------------------
+        # Stats
+        # ------------------------------------------------------------------
+        print(f"Total points: {len(X)}")
+        print(f"Pareto-efficient points: {np.sum(pareto_mask)}")
+        print(f"Percentage on Pareto front: {100 * np.sum(pareto_mask) / len(X):.1f}%")
+
+
 
 
 
@@ -2417,9 +2626,12 @@ def main(argv: Optional[List[str]]=None):
     agg.import_tpg_nbInstr(data, nbInstr_json_files)
 
     # 3. plot 
-    agg.plot_tpg_ipc_all_uarch_one_plot_each(data)
+    # agg.plot_tpg_ipc_all_uarch_one_plot_each(data)
+    # agg.plot_tpg_ipc_all_uarch_averaged(data)
     agg.plot_tpg_ipc_across_uarchs_one_plot(data)
-    agg.plot_tpg_ipc_all_uarch_averaged(data)
+
+    # 4. 3D pareto front acc, lat, ress
+    agg.plot_pareto_front_dist_lat_ress_3d(data)
 
     # Combined plot
     # combined_png = out_dir / "combined_latency_by_tpg.png"
