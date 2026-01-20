@@ -48,6 +48,9 @@ class SeedResult:
     seed: int
     source_file: Optional[Path] = None
     tpg_dir_name: Optional[str] = None
+    avg_nb_instr: Optional[float] = None
+    avg_nb_evaluated_programs: Optional[float] = None
+    avg_nb_evaluated_teams: Optional[float] = None
 
 @dataclass
 class ArchGroup:
@@ -61,6 +64,7 @@ class ArchGroup:
     accuracy: Optional[float] = None
     uarch_ressources: Optional[Uarch_Ressources] = None 
     norm_ressource: Optional[float] = None
+    
 
 # -----------------------------
 # Helpers
@@ -1673,39 +1677,58 @@ class TPGResultsAggregator:
                             luts=n_luts,
                         )   
 
-    def find_biggest_uarch_ressources(self, data):
+    def find_baseline(self, data):
         """
-        Find the uarch with the maximum DSPs, LUTs, and Regs.
+        Find the uarch with the minimum LUTs.
+        DSPs, LUTs, and Regs are fetched from this uarch.
+        We do this since its possible the baseline uarch for LUTs is not the same as for DSPs or Regs.
         The uarch retunned dominates in all three ressources.
         """
-        max_dsps = 0
-        max_luts = 0
-        max_regs = 0
-        max_uarch_name = ""
+        baseline_dsps = 0
+        baseline_luts = 1e20
+        baseline_regs = 0
+        baseline_uarch_name = ""
 
         for tpg, uarch_map in sorted(data.items()):
             for uarch, isa_map in sorted(uarch_map.items()):
                 for isa, archgroup in sorted(isa_map.items()):
                     if archgroup.uarch_ressources is not None:
                         res = archgroup.uarch_ressources
-                        if res.dsps > max_dsps and res.luts > max_luts and res.regs > max_regs:
-                            max_dsps = res.dsps
-                            max_luts = res.luts
-                            max_regs = res.regs
-                            max_uarch_name = uarch
+                        if res.luts < baseline_luts:
+                            baseline_dsps = res.dsps
+                            baseline_luts = res.luts
+                            baseline_regs = res.regs
+                            baseline_uarch_name = uarch
 
-        print(f"Biggest uarch is {max_uarch_name} with DSPs: {max_dsps}, LUTs: {max_luts}, REGs: {max_regs}")
+        print(f"Baseline uarch is {baseline_uarch_name} with DSPs: {baseline_dsps}, LUTs: {baseline_luts}, REGs: {baseline_regs}")
 
-        return max_dsps, max_luts, max_regs
+        return baseline_dsps, baseline_luts, baseline_regs
 
     def assign_normalized_ressources(self, data):
         """
         Assign normalized ressources to each archgroup based on the biggest uarch ressources.
         """
-        max_dsps, max_luts, max_regs = self.find_biggest_uarch_ressources(data)
-        if max_dsps == 0 or max_luts == 0 or max_regs == 0:
-            print("WARNING: One of the maximum ressources is zero, cannot normalize.")
+
+        # ------------------------------------------------------------
+        # Define a resource cost model (adjustable)
+        # ------------------------------------------------------------
+        alpha = 0.5   # LUT weight
+        beta  = 0.5   # FF weight
+
+        # DSP equivalent cost expressed in LUT/REG terms
+        DSP_LUT_EQ = 700 #1500 # 750 LUTs, 150 FFs is the diff btw cv32e20_em1 and cv32e20_em0
+        DSP_FF_EQ  = 150 #0
+
+        # Gamma expressed consistently with alpha/beta
+        gamma = alpha * DSP_LUT_EQ + beta * DSP_FF_EQ
+
+        baseline_dsps, baseline_luts, baseline_regs = self.find_baseline(data)
+        if baseline_luts == 0 or baseline_regs == 0:
+            # we use the gamma value for DSPs, so if DSPs is 0 its not a problem
+            print("WARNING: One of the baseline ressources is zero, cannot normalize.")
             return
+
+        baseline_cost = (alpha * baseline_luts) + (beta * baseline_regs) + (gamma * baseline_dsps)
 
         # normalize 
         for tpg, uarch_map in sorted(data.items()):
@@ -1713,10 +1736,22 @@ class TPGResultsAggregator:
                 for isa, archgroup in sorted(isa_map.items()):
                     if archgroup.uarch_ressources is not None:
                         res = archgroup.uarch_ressources
-                        norm_dsps = res.dsps / max_dsps    
-                        norm_luts = res.luts / max_luts
-                        norm_regs = res.regs / max_regs
-                        archgroup.norm_ressource = norm_dsps + norm_luts + norm_regs
+                        dsps = res.dsps    
+                        luts = res.luts 
+                        regs = res.regs 
+
+                        # --------------------------------------------------------
+                        # Resource cost
+                        # Cost = α·LUT + β·FF + γ·DSP
+                        # --------------------------------------------------------
+                        cost = alpha * luts + beta * regs + gamma * dsps
+
+                        normalized_cost = 100 * cost / baseline_cost        
+
+                        archgroup.norm_ressource = normalized_cost
+                        print(f"uarch {uarch} | normalized ressource: {archgroup.norm_ressource:.2f}%")
+                    else:
+                        print(f"uarch {uarch} | no ressources info, cannot normalize.")
 
 
     def select_best_isa_per_uarch(self, data):
@@ -2056,9 +2091,8 @@ class TPGResultsAggregator:
         print(f"Pareto-efficient points: {np.sum(pareto_mask)}")
         print(f"Percentage on Pareto front: {100 * np.sum(pareto_mask) / len(X):.1f}%")
 
-    
 
-    def parse_tpgInfos(path_to_file: str):
+    def parse_tpgInfos(self, path_to_file: str):
         """
         Parse executioninfos.json to extract unique traceGroup entries
         based on their traceTeamIds. Used to calculate the TPG IPC. 
@@ -2088,9 +2122,32 @@ class TPGResultsAggregator:
                 # Same traceTeamIds → same data, just record provenance if desired
                 trace_groups[trace_team_ids]["sourceNodeIds"].append(node_id)
 
-        print(trace_groups)
-
+        #print(trace_groups)
         # trace_groups now contains the fully factored representation
+
+        # compute nbInstr per trace group
+        for trace_team_ids, group in trace_groups.items():
+            nb_execution = group["nbExecutionForEachInstr"]
+            total_nb_instr = sum(nb_execution.values())
+            group["total_nb_instr"] = total_nb_instr
+            #print(f"TraceTeamIds: {trace_team_ids}, nbEvaluatedPrograms: {group["nbEvaluatedPrograms"]}, Total nbInstr: {total_nb_instr}")
+
+        # avg nbInstr per team, avg nbEvaluatedPrograms, avg nbEvaluatedTeams
+        n_teams = len(trace_groups)
+        if n_teams == 0:
+            print("No trace groups found.")
+            return
+        total_nb_instr_all = sum(group["total_nb_instr"] for group in trace_groups.values())
+        total_nb_evaluated_programs = sum(group["nbEvaluatedPrograms"] for group in trace_groups.values())
+        total_nb_evaluated_teams = sum(group["nbEvaluatedTeams"] for group in trace_groups.values())
+        avg_nb_instr = total_nb_instr_all / n_teams
+        avg_nb_evaluated_programs = total_nb_evaluated_programs / n_teams
+        avg_nb_evaluated_teams = total_nb_evaluated_teams / n_teams
+        #print(f"Average nbInstr: {avg_nb_instr}")
+        #print(f"Average nbEvaluatedPrograms: {avg_nb_evaluated_programs}")
+        #print(f"Average nbEvaluatedTeams: {avg_nb_evaluated_teams}")
+
+        return avg_nb_instr, avg_nb_evaluated_programs, avg_nb_evaluated_teams
 
     def import_tpg_nbInstr(self, data, nbInstr_json_files):
         """
@@ -2105,16 +2162,26 @@ class TPGResultsAggregator:
 
         for file in nbInstr_json_files:
             # find canonical tpg name 
-            print(file)
-            #(tpg, seed) = self.canonicalize_tpg_dir(file)
+            tpg_dir = file.parents[2]
+            tpg_dir_name = tpg_dir.name
+            (tpg, seed) = self.canonicalize_tpg_dir(tpg_dir_name)
+            # print(tpg, seed)
             
 
         for file in nbInstr_json_files:
-            self.parse_tpgInfos(file)
+            (avg_nb_instr, avg_nb_evaluated_programs, avg_nb_evaluated_teams) = self.parse_tpgInfos(file)
 
-        # for tpg, uarch_map in data.items():
-        #     for uarch, isa_map in uarch_map.items():
-        #         for isa, archgroup in isa_map.items():
+        for tpg, uarch_map in data.items():
+            for uarch, isa_map in uarch_map.items():
+                for isa, archgroup in isa_map.items():
+                    if archgroup.tpg_canonical == tpg:
+                        archgroup.seeds[seed].avg_nb_instr = avg_nb_instr
+                        archgroup.seeds[seed].avg_nb_evaluated_programs = avg_nb_evaluated_programs
+                        archgroup.seeds[seed].avg_nb_evaluated_teams = avg_nb_evaluated_teams
+
+    
+
+    
 
 
 
@@ -2162,10 +2229,10 @@ def main(argv: Optional[List[str]]=None):
     # 2. Enrich the data dict with IPC informations 
     # nbInstr infos are tpg dependent. 
     # data[tpg][uarch][isa] -> will not vary for uarch and isa
-    #agg.import_tpg_nbInstr(data, nbInstr_json_files)
+    agg.import_tpg_nbInstr(data, nbInstr_json_files)
 
     # 3. plot 
-
+    
 
     # Combined plot
     # combined_png = out_dir / "combined_latency_by_tpg.png"
