@@ -555,29 +555,53 @@ class TPGResultsAggregator:
                 isa_list = list(isa_map.keys())
                 no_c_isa, with_c_isa = self.is_c_extension(isa_list[0], isa_list[1])
 
-                # Superimpose base and compressed ISA
-                for isa, marker, label in zip([no_c_isa, with_c_isa], ["o", "x"], ["base_isa", "compressed_isa"]):
+                # --- Compute both ISA stats first
+                stats = {}
+                for isa in [no_c_isa, with_c_isa]:
                     group = isa_map[isa]
                     seed_means = [s.mean for s in group.seeds]
                     seed_stddevs = [s.stddev for s in group.seeds]
                     if not seed_means:
                         continue
-                    mean_latency = mean(seed_means)
-                    stddev_latency = mean(seed_stddevs) if seed_stddevs else 0.0
 
-                    y_axis_all_vals.append(mean_latency + stddev_latency)
-                    y_axis_all_vals.append(mean_latency - stddev_latency)
+                    stats[isa] = {
+                        "mean": mean(seed_means),
+                        "stddev": mean(seed_stddevs) if seed_stddevs else 0.0,
+                    }
 
-                    # display point on plot
-                    offset = 0.1 # small jitter offset
+                if len(stats) != 2:
+                    continue
+
+                # --- Decide color logic
+                base_better = stats[no_c_isa]["mean"] < stats[with_c_isa]["mean"]
+                base_color = "red" if base_better else "black"
+
+                # --- Plot
+                for isa, marker, label in zip(
+                    [no_c_isa, with_c_isa],
+                    ["o", "x"],
+                    ["base_isa", "compressed_isa"],
+                ):
+                    mean_latency = stats[isa]["mean"]
+                    stddev_latency = stats[isa]["stddev"]
+
+                    y_axis_all_vals.extend([
+                        mean_latency + stddev_latency,
+                        mean_latency - stddev_latency,
+                    ])
+
+                    offset = 0.1
                     x_pos = xi - offset if isa == no_c_isa else xi + offset
+                    color = base_color if isa == no_c_isa else "black"
+
                     ax.errorbar(
-                        x_pos, mean_latency,
+                        x_pos,
+                        mean_latency,
                         yerr=stddev_latency,
                         fmt=marker,
-                        color="black",
+                        color=color,
                         capsize=5,
-                        label=label
+                        label=label,
                     )
 
                 # X-axis label as "uarch | ISA"
@@ -612,6 +636,8 @@ class TPGResultsAggregator:
             )
 
             fig.tight_layout()
+            plt.show()
+
             safe_name = self.sanitize_filename(f"{tpg_canonical}_latency_per_uarch.png")
             fig_path = self.out / safe_name
             fig.savefig(fig_path)
@@ -728,30 +754,49 @@ class TPGResultsAggregator:
                 isa_list = list(isa_map.keys())
                 no_c_isa, with_c_isa = self.is_c_extension(isa_list[0], isa_list[1])
 
-                for isa, marker in zip([no_c_isa, with_c_isa], ["o", "x"]):
+                # --- Compute both ISA stats first
+                stats = {}
+                for isa in [no_c_isa, with_c_isa]:
                     group = isa_map[isa]
                     seed_means = [s.mean for s in group.seeds]
                     seed_stddevs = [s.stddev for s in group.seeds]
-
                     if not seed_means:
                         continue
 
-                    mean_latency = mean(seed_means)
-                    stddev_latency = mean(seed_stddevs)
+                    stats[isa] = {
+                        "mean": mean(seed_means),
+                        "stddev": mean(seed_stddevs),
+                    }
 
-                    y_axis_all_vals.append(mean_latency+stddev_latency)
-                    y_axis_all_vals.append(mean_latency-stddev_latency)
-                    
-                    # display point on plot
-                    offset = 0.1 # small jitter offset
+                if len(stats) != 2:
+                    continue
+
+                # --- Decide color logic
+                base_better = stats[no_c_isa]["mean"] < stats[with_c_isa]["mean"]
+                base_color = "red" if base_better else "black"
+
+                # --- Plot
+                for isa, marker in zip([no_c_isa, with_c_isa], ["o", "x"]):
+                    mean_latency = stats[isa]["mean"]
+                    stddev_latency = stats[isa]["stddev"]
+
+                    y_axis_all_vals.extend([
+                        mean_latency + stddev_latency,
+                        mean_latency - stddev_latency,
+                    ])
+
+                    offset = 0.1
                     x_pos = xi - offset if isa == no_c_isa else xi + offset
+                    color = base_color if isa == no_c_isa else "black"
+
                     ax.errorbar(
-                        x_pos, mean_latency,
+                        x_pos,
+                        mean_latency,
                         yerr=stddev_latency,
                         fmt=marker,
-                        color="black",
+                        color=color,
                         capsize=5,
-                        label=isa
+                        label=isa,
                     )
 
             # define y-axis start and end index
@@ -773,6 +818,7 @@ class TPGResultsAggregator:
             )
 
             fig.tight_layout()
+            plt.show()
 
             safe_name = self.sanitize_filename(f"{uarch}_latency_per_tpg.png")
             fig_path = self.out / safe_name
@@ -780,6 +826,7 @@ class TPGResultsAggregator:
             plt.close(fig)
 
             print(f"Saved plot for uarch {uarch} to {fig_path}")
+
 
     def plot_x_axis_tpgs_y_axis_all_uarchs(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]):
         """
@@ -1749,7 +1796,6 @@ class TPGResultsAggregator:
                         normalized_cost = 100 * cost / baseline_cost        
 
                         archgroup.norm_ressource = normalized_cost
-                        print(f"uarch {uarch} | normalized ressource: {archgroup.norm_ressource:.2f}%")
                     else:
                         print(f"uarch {uarch} | no ressources info, cannot normalize.")
 
@@ -2075,6 +2121,7 @@ class TPGResultsAggregator:
             + pareto_iset_dtype_elements
         )
 
+
         plt.legend(
             handles=legend_elements,
             fontsize=9,
@@ -2388,6 +2435,25 @@ class TPGResultsAggregator:
         from matplotlib.lines import Line2D
         from itertools import cycle
 
+        # ---------------------------------------------------------------
+        # Pre-filter ISA
+        # ---------------------------------------------------------------
+        data = self.select_best_isa_for_all_uarchs(data)
+
+        # ---------------------------------------------------------------
+        # Custom legend orders
+        # ---------------------------------------------------------------
+        iset_custom_order = [
+            "{*,/,>,-,+}",
+            "{log,exp,*,/,>,-,+}",
+            "{trig,*,/,>,-,+}",
+            "{trig,log,exp,*,/,>,-,+}",
+            "{log2,exp2,>,-,+}",
+            "{log2,exp2,*,>,-,+}",
+            "{log2,exp2,*,/,>,-,+}",
+        ]
+        iset_order_index = {s: i for i, s in enumerate(iset_custom_order)}
+
         # ------------------------------------------------------------------
         # Collect data
         # ------------------------------------------------------------------
@@ -2440,9 +2506,13 @@ class TPGResultsAggregator:
         ))
 
         # Unique Pareto (iset | dtype) pairs (for markers)
-        pareto_iset_dtype = list(dict.fromkeys(
-            (meta["iset"], meta["dtype"]) for meta in pareto_meta
-        ))
+        pareto_iset_dtype = sorted(
+            {(m["iset"], m["dtype"]) for m in pareto_meta},
+            key=lambda t: (
+                iset_order_index.get(t[0], len(iset_custom_order)),
+                t[1],
+            )
+        )
 
         # ------------------------------------------------------------------
         # Color map: microarchitecture → color (Pareto only)
@@ -2458,14 +2528,14 @@ class TPGResultsAggregator:
         # Marker map: (iset | dtype) → marker (Pareto only)
         # ------------------------------------------------------------------
         marker_cycle = cycle([
-            'o',  # circle
-            's',  # square
+            'X',  # x filled
             '^',  # triangle up
             '*',  # star
+            's',  # square
             'v',  # triangle down
             'D',  # diamond
             'P',  # plus filled
-            'X',  # x filled
+            'o',  # circle
         ])
 
         marker_map = {
@@ -2575,10 +2645,7 @@ class TPGResultsAggregator:
         print(f"Pareto-efficient points: {np.sum(pareto_mask)}")
         print(f"Percentage on Pareto front: {100 * np.sum(pareto_mask) / len(X):.1f}%")
 
-
-
-
-
+    
 # -----------------------------
 # CLI / main
 # -----------------------------
@@ -2599,8 +2666,8 @@ def main(argv: Optional[List[str]]=None):
     #agg.save_csv(df, "aggregated_tpg_results.csv")
     #agg.save_csv(df_avg, "aggregated_averaged_tpg_results.csv")
 
-    #agg.plot_x_axis_uarchs_y_axis_one_tpg(data)
-    #agg.plot_x_axis_tpgs_y_axis_one_uarch(data)
+    agg.plot_x_axis_uarchs_y_axis_one_tpg(data)
+    agg.plot_x_axis_tpgs_y_axis_one_uarch(data)
 
     #agg.plot_x_axis_tpgs_y_axis_all_uarchs(data)
     #agg.plot_x_axis_tpgs_y_axis_all_uarchs_min_max(data)
@@ -2608,11 +2675,13 @@ def main(argv: Optional[List[str]]=None):
     # agg.plot_x_axis_uarchs_y_axis_all_tpgs(data)
 
     agg.import_tpg_accuracies(data, csv_accuracies_path)
-    agg.plot_pareto_front_acc_lat(data)
+    #agg.plot_pareto_front_acc_lat(data)
 
     agg.import_uarch_ressources(data, uarchs_ressources_path)
     agg.assign_normalized_ressources(data)
-    agg.plot_pareto_front_ress_lat(data)
+    #agg.plot_pareto_front_ress_lat(data)
+
+    
 
 
     # Building IPC analysis 
@@ -2628,18 +2697,26 @@ def main(argv: Optional[List[str]]=None):
     # 3. plot 
     # agg.plot_tpg_ipc_all_uarch_one_plot_each(data)
     # agg.plot_tpg_ipc_all_uarch_averaged(data)
-    agg.plot_tpg_ipc_across_uarchs_one_plot(data)
+    #agg.plot_tpg_ipc_across_uarchs_one_plot(data)
 
     # 4. 3D pareto front acc, lat, ress
-    agg.plot_pareto_front_dist_lat_ress_3d(data)
+    #agg.plot_pareto_front_dist_lat_ress_3d(data)
 
-    # Combined plot
+
+
+
+
+    # Combined plot ?? Not sure what this is 
     # combined_png = out_dir / "combined_latency_by_tpg.png"
     # agg.plot_combined(df, combined_png)
     # print(f"INFO: saved combined plot to {combined_png}")
 
     # agg.plot_per_tpg_bar(df, out_dir, max_plots=args.max_per_tpg)
     # print(f"INFO: saved up to {args.max_per_tpg} per-TPG plots in {out_dir}")
+
+
+
+    
 
     # quick summary printed
     n_tpgs = df["iset"].nunique() if not df.empty else 0
