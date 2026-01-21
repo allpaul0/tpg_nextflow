@@ -2645,6 +2645,322 @@ class TPGResultsAggregator:
         print(f"Pareto-efficient points: {np.sum(pareto_mask)}")
         print(f"Percentage on Pareto front: {100 * np.sum(pareto_mask) / len(X):.1f}%")
 
+    def plot_pareto_front_ress_lat_projection(self, data):
+
+        from statistics import mean
+        from itertools import cycle
+        from collections import defaultdict
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from matplotlib.lines import Line2D
+
+        # ---------------------------------------------------------------
+        # Custom legend orders
+        # ---------------------------------------------------------------
+        iset_custom_order = [
+            "{*,/,>,-,+}",
+            "{log,exp,*,/,>,-,+}",
+            "{trig,*,/,>,-,+}",
+            "{trig,log,exp,*,/,>,-,+}",
+            "{log2,exp2,>,-,+}",
+            "{log2,exp2,*,>,-,+}",
+            "{log2,exp2,*,/,>,-,+}",
+        ]
+        iset_order_index = {s: i for i, s in enumerate(iset_custom_order)}
+
+        uarch_custom_order = [
+            "e2_em0d1", "e2_em1d1", "e2_em2d1", "e2_em3d1",
+            "e2_im0d1", "e2_im1d1", "e2_im2d1", "e2_im3d1",
+            "e4_em0d0", "e4_em4d0", "e4_em4d2",
+            "e4_im0d0", "e4_im4d0", "e4_im4d2",
+            "e4_im5d2", "e4_im5d2_pulp",
+            "e4_im5d2_fpu", "e4_im5d2_pulp_fpu",
+        ]
+        uarch_order_index = {s: i for i, s in enumerate(uarch_custom_order)}
+
+        # ---------------------------------------------------------------
+        # Pre-filter ISA
+        # ---------------------------------------------------------------
+        data = self.select_best_isa_for_all_uarchs(data)
+
+        # ---------------------------------------------------------------
+        # Collect data
+        # ---------------------------------------------------------------
+        dists, latencies, ressources = [], [], []
+        points_meta = []
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                for isa, archgroup in sorted(isa_map.items()):
+                    if (
+                        archgroup.accuracy is not None
+                        and archgroup.norm_ressource is not None
+                        and archgroup.seeds
+                    ):
+                        dists.append(archgroup.accuracy)
+                        latencies.append(mean(s.mean for s in archgroup.seeds))
+                        ressources.append(archgroup.norm_ressource)
+
+                        points_meta.append({
+                            "uarch": uarch,
+                            "iset": archgroup.iset,
+                            "dtype": archgroup.dtype,
+                            "accuracy": archgroup.accuracy
+                        })
+
+        Xd = np.array(dists)
+        Yl = np.array(latencies)
+        Zr = np.array(ressources)
+
+        # ---------------------------------------------------------------
+        # 3D Pareto (distance, latency, resources)
+        # ---------------------------------------------------------------
+        pareto_3d = self.is_pareto_efficient(
+            np.column_stack((Xd, Yl, Zr))
+        )
+
+        pareto_lat = Yl[pareto_3d]
+        pareto_res = Zr[pareto_3d]
+        pareto_meta = [m for m, p in zip(points_meta, pareto_3d) if p]
+
+        # ---------------------------------------------------------------
+        # Semantic domains (Pareto only)
+        # ---------------------------------------------------------------
+        pareto_uarches = sorted(
+            {m["uarch"] for m in pareto_meta},
+            key=lambda u: uarch_order_index.get(u, len(uarch_custom_order))
+        )
+
+        pareto_tpgs = sorted(
+            {(m["iset"], m["dtype"]) for m in pareto_meta},
+            key=lambda t: (
+                iset_order_index.get(t[0], len(iset_custom_order)),
+                t[1],
+            )
+        )
+
+        # ---------------------------------------------------------------
+        # Color & marker maps
+        # ---------------------------------------------------------------
+        cmap = plt.get_cmap("tab20")
+        color_map = {
+            uarch: cmap(i % cmap.N)
+            for i, uarch in enumerate(pareto_uarches)
+        }
+
+        marker_cycle = cycle([
+            'X',  # x filled
+            '^',  # triangle up
+            '*',  # star
+            's',  # square
+            'v',  # triangle down
+            'D',  # diamond
+            'P',  # plus filled
+            'o',  # circle
+        ])
+
+        marker_map = {tpg: next(marker_cycle) for tpg in pareto_tpgs}
+
+        # ---------------------------------------------------------------
+        # Group Pareto points by TPG family
+        # ---------------------------------------------------------------
+        tpg_groups = defaultdict(list)
+        for res, lat, meta in zip(pareto_res, pareto_lat, pareto_meta):
+            tpg_groups[(meta["iset"], meta["dtype"])].append((res, lat, meta))
+
+
+        # ---------------------------------------------------------------
+        # Plot
+        # ---------------------------------------------------------------
+        plt.figure(figsize=(18.5, 9))
+
+        # --- thin per-TPG Pareto envelopes ---
+        for tpg, pts in tpg_groups.items():
+            if len(pts) < 2:
+                continue
+
+            # extract arrays
+            res = np.array([p[0] for p in pts])
+            lat = np.array([p[1] for p in pts])
+
+            # 2D Pareto for this TPG family
+            pareto_mask = self.is_pareto_efficient(
+                np.column_stack((res, lat))
+            )
+
+            res_p = res[pareto_mask]
+            lat_p = lat[pareto_mask]
+
+            if len(res_p) < 2:
+                continue
+
+            # sort by resources
+            idx = np.argsort(res_p)
+            res_p = res_p[idx]
+            lat_p = lat_p[idx]
+
+            # build staircase
+            step_res = [res_p[0]]
+            step_lat = [lat_p[0]]
+
+            for i in range(1, len(res_p)):
+                # horizontal extension
+                step_res.append(res_p[i])
+                step_lat.append(step_lat[-1])
+
+                # vertical drop
+                step_res.append(res_p[i])
+                step_lat.append(lat_p[i])
+
+            plt.plot(
+                step_res,
+                step_lat,
+                color="gray",
+                linewidth=0.8,
+                alpha=0.8,
+                zorder=1,
+            )
+
+        # --- annotate TPG accuracy for all families ---
+        for tpg, pts in tpg_groups.items():
+            # extract arrays
+            res = np.array([p[0] for p in pts])
+            lat = np.array([p[1] for p in pts])
+            meta_list = [p[2] for p in pts]
+
+            # select the "best" point (minimal resources)
+            best_idx = np.argmin(res)
+            best_meta = meta_list[best_idx]
+
+            # if lat is around 1e5, augment the offset
+            offset = 0
+            if lat[best_idx] > 1e5:
+                offset = 8000
+            elif lat[best_idx] > 1e4:
+                offset = 1500
+            elif lat[best_idx] > 1e3:
+                offset = 500
+            elif lat[best_idx] > 1e2:
+                offset = 50
+            
+            # make this bigger
+            plt.text(
+                res[best_idx] - 2.7,
+                lat[best_idx] + offset,
+                f"dist to obj: {best_meta['accuracy']:.3f}",
+                fontsize=10,
+                # make bold
+                #fontweight="bold",
+                color="blue",
+                ha="left",
+                va="bottom",
+                alpha=1.0,
+                zorder=5
+            )
+
+
+        # --- scatter points ---
+        for res, lat, meta in zip(pareto_res, pareto_lat, pareto_meta):
+            plt.scatter(
+                res, lat,
+                c=[color_map[meta["uarch"]]],
+                marker=marker_map[(meta["iset"], meta["dtype"])],
+                s=160,
+                edgecolors='k',
+                linewidth=0.8,
+                zorder=3,
+            )
+
+        # ---------------------------------------------------------------
+        # 2D Pareto envelope (latency × resources ONLY)
+        # ---------------------------------------------------------------
+        costs_2d = np.column_stack((pareto_res, pareto_lat))
+        pareto_2d = self.is_pareto_efficient(costs_2d)
+
+        env_res = pareto_res[pareto_2d]
+        env_lat = pareto_lat[pareto_2d]
+
+        env_idx = np.argsort(env_res)
+       
+
+        # ---------------------------------------------------------------
+        # Background (dominated) points — thin gray
+        # ---------------------------------------------------------------
+        non_pareto_mask = ~pareto_3d
+
+        plt.scatter(
+            Zr[non_pareto_mask],   # resources
+            Yl[non_pareto_mask],   # latency
+            c="gray",
+            s=40,
+            alpha=0.25,
+            linewidths=0,
+            zorder=0,
+        )
+
+        # ---------------------------------------------------------------
+        # Styling
+        # ---------------------------------------------------------------
+        plt.xlabel("Resources ↓", fontsize=12, fontweight="bold")
+        plt.ylabel("Latency ↓", fontsize=12, fontweight="bold")
+        plt.yscale("log")
+        plt.grid(True, alpha=0.3, linestyle="--")
+        #plt.title("Projected Pareto Front (3D dominance → 2D view)",fontsize=14,fontweight="bold",)
+
+        # ---------------------------------------------------------------
+        # Legend
+        # ---------------------------------------------------------------
+        tpg_header = Line2D([], [], linestyle='none', label="TPG (ISGP | data type)")
+        tpg_elements = [
+            Line2D(
+                [0], [0],
+                marker=marker_map[tpg],
+                linestyle='',
+                color='black',
+                markersize=10,
+                label=f"{tpg[0]} | {tpg[1]}",
+            )
+            for tpg in pareto_tpgs
+        ]
+
+        uarch_header = Line2D([], [], linestyle='none', label="Microarchitecture")
+        uarch_elements = [
+            Line2D(
+                [0], [0],
+                marker='o',
+                linestyle='',
+                markerfacecolor=color_map[uarch],
+                markeredgewidth=0,
+                markersize=10,
+                label=uarch,
+            )
+            for uarch in pareto_uarches
+        ]
+
+        plt.legend(
+            handles=(
+                [tpg_header]
+                + tpg_elements
+                + [Line2D([], [], linestyle='none', label="")]
+                + [uarch_header]
+                + uarch_elements
+            ),
+            fontsize=9,
+            loc="best",
+            frameon=True,
+        )
+
+        #plt.tight_layout()
+
+        # ---- export to PDF ----
+        plt.savefig(
+            "pareto_front_ress_lat_projection.pdf",
+            format="pdf",
+            bbox_inches="tight"
+        )
+
+
+        plt.show()
     
 # -----------------------------
 # CLI / main
@@ -2701,7 +3017,7 @@ def main(argv: Optional[List[str]]=None):
 
     # 4. 3D pareto front acc, lat, ress
     #agg.plot_pareto_front_dist_lat_ress_3d(data)
-
+    agg.plot_pareto_front_ress_lat_projection(data)
 
 
 
