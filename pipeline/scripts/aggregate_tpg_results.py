@@ -1013,6 +1013,7 @@ class TPGResultsAggregator:
         )
 
         fig.tight_layout()
+        plt.show()
 
         safe_name = self.sanitize_filename(f"x-axis_tpgs_all_uarchs.png")
         fig_path = self.out / safe_name
@@ -2768,11 +2769,98 @@ class TPGResultsAggregator:
         for res, lat, meta in zip(pareto_res, pareto_lat, pareto_meta):
             tpg_groups[(meta["iset"], meta["dtype"])].append((res, lat, meta))
 
-
         # ---------------------------------------------------------------
         # Plot
         # ---------------------------------------------------------------
         plt.figure(figsize=(18.5, 9))
+
+
+
+        def build_staircase(res, lat):
+            idx = np.argsort(res)
+            res = res[idx]
+            lat = lat[idx]
+
+            step_res = [res[0]]
+            step_lat = [lat[0]]
+
+            for i in range(1, len(res)):
+                step_res.append(res[i])
+                step_lat.append(step_lat[-1])
+                step_res.append(res[i])
+                step_lat.append(lat[i])
+
+            return step_res, step_lat
+
+        # ---------------------------------------------------------------
+        # Accuracy feasibility zones (discrete, non-overreaching)
+        # ---------------------------------------------------------------
+        unique_accs = sorted({m["accuracy"] for m in pareto_meta})
+        zone_cmap = plt.get_cmap("tab10")
+
+        # Upper bound for shading (worst observed latency)
+        lat_max = max(Yl) * 1.1
+
+        for i, acc in enumerate(unique_accs):
+            # select Pareto points with accuracy <= acc
+            mask = np.array([m["accuracy"] <= acc for m in pareto_meta])
+
+            if np.sum(mask) < 2:
+                continue
+
+            res = pareto_res[mask]
+            lat = pareto_lat[mask]
+
+            # 2D Pareto envelope
+            env_mask = self.is_pareto_efficient(
+                np.column_stack((res, lat))
+            )
+
+            res_e = res[env_mask]
+            lat_e = lat[env_mask]
+
+            if len(res_e) < 2:
+                continue
+
+            # build staircase envelope
+            idx = np.argsort(res_e)
+            res_e = res_e[idx]
+            lat_e = lat_e[idx]
+
+            step_res = [res_e[0]]
+            step_lat = [lat_e[0]]
+
+            for j in range(1, len(res_e)):
+                step_res.append(res_e[j])
+                step_lat.append(step_lat[-1])
+                step_res.append(res_e[j])
+                step_lat.append(lat_e[j])
+
+            color = zone_cmap(i % zone_cmap.N)
+
+            # fill ONLY above the envelope
+            plt.fill_between(
+                step_res,
+                step_lat,
+                lat_max,
+                color=color,
+                alpha=0.12,
+                zorder=0,
+            )
+
+            # optional: draw envelope edge for readability
+            plt.plot(
+                step_res,
+                step_lat,
+                color=color,
+                linewidth=1.2,
+                alpha=0.9,
+                zorder=2,
+            )
+
+
+
+
 
         # --- thin per-TPG Pareto envelopes ---
         for tpg, pts in tpg_groups.items():
@@ -2902,7 +2990,7 @@ class TPGResultsAggregator:
         # Styling
         # ---------------------------------------------------------------
         plt.xlabel("Resources ↓", fontsize=12, fontweight="bold")
-        plt.ylabel("Latency ↓", fontsize=12, fontweight="bold")
+        plt.ylabel("Latency (CC) ↓", fontsize=12, fontweight="bold")
         plt.yscale("log")
         plt.grid(True, alpha=0.3, linestyle="--")
         #plt.title("Projected Pareto Front (3D dominance → 2D view)",fontsize=14,fontweight="bold",)
@@ -2982,8 +3070,8 @@ def main(argv: Optional[List[str]]=None):
     #agg.save_csv(df, "aggregated_tpg_results.csv")
     #agg.save_csv(df_avg, "aggregated_averaged_tpg_results.csv")
 
-    agg.plot_x_axis_uarchs_y_axis_one_tpg(data)
-    agg.plot_x_axis_tpgs_y_axis_one_uarch(data)
+    #agg.plot_x_axis_uarchs_y_axis_one_tpg(data)
+    #agg.plot_x_axis_tpgs_y_axis_one_uarch(data)
 
     #agg.plot_x_axis_tpgs_y_axis_all_uarchs(data)
     #agg.plot_x_axis_tpgs_y_axis_all_uarchs_min_max(data)
