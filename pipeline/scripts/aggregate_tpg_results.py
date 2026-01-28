@@ -2775,89 +2775,107 @@ class TPGResultsAggregator:
         plt.figure(figsize=(18.5, 9))
 
 
+        draw_accuracy_enveloppes = True
+        if draw_accuracy_enveloppes:
+            def build_staircase(res, lat):
+                idx = np.argsort(res)
+                res = res[idx]
+                lat = lat[idx]
 
-        def build_staircase(res, lat):
-            idx = np.argsort(res)
-            res = res[idx]
-            lat = lat[idx]
+                step_res = [res[0]]
+                step_lat = [lat[0]]
 
-            step_res = [res[0]]
-            step_lat = [lat[0]]
+                for i in range(1, len(res)):
+                    step_res.append(res[i])
+                    step_lat.append(step_lat[-1])
+                    step_res.append(res[i])
+                    step_lat.append(lat[i])
 
-            for i in range(1, len(res)):
-                step_res.append(res[i])
-                step_lat.append(step_lat[-1])
-                step_res.append(res[i])
-                step_lat.append(lat[i])
+                return step_res, step_lat
 
-            return step_res, step_lat
+            # ---------------------------------------------------------------
+            # Accuracy feasibility zones (discrete, non-overreaching)
+            # ---------------------------------------------------------------
+            import string
 
-        # ---------------------------------------------------------------
-        # Accuracy feasibility zones (discrete, non-overreaching)
-        # ---------------------------------------------------------------
-        unique_accs = sorted({m["accuracy"] for m in pareto_meta})
-        zone_cmap = plt.get_cmap("tab10")
+            unique_accs = sorted({m["accuracy"] for m in pareto_meta})
+            zone_cmap = plt.get_cmap("tab10")
 
-        # Upper bound for shading (worst observed latency)
-        lat_max = max(Yl) * 1.1
+            # Upper bound for shading (worst observed latency)
+            lat_max = max(Yl) * 1.1
 
-        for i, acc in enumerate(unique_accs):
-            # select Pareto points with accuracy <= acc
-            mask = np.array([m["accuracy"] <= acc for m in pareto_meta])
+            # letters for labeling
+            letters = string.ascii_uppercase
 
-            if np.sum(mask) < 2:
-                continue
+            for i, acc in enumerate(unique_accs):
+                # select Pareto points with accuracy <= acc
+                mask = np.array([m["accuracy"] <= acc for m in pareto_meta])
 
-            res = pareto_res[mask]
-            lat = pareto_lat[mask]
+                if np.sum(mask) < 2:
+                    continue
 
-            # 2D Pareto envelope
-            env_mask = self.is_pareto_efficient(
-                np.column_stack((res, lat))
-            )
+                res = pareto_res[mask]
+                lat = pareto_lat[mask]
 
-            res_e = res[env_mask]
-            lat_e = lat[env_mask]
+                # 2D Pareto envelope
+                env_mask = self.is_pareto_efficient(
+                    np.column_stack((res, lat))
+                )
 
-            if len(res_e) < 2:
-                continue
+                res_e = res[env_mask]
+                lat_e = lat[env_mask]
 
-            # build staircase envelope
-            idx = np.argsort(res_e)
-            res_e = res_e[idx]
-            lat_e = lat_e[idx]
+                if len(res_e) < 2:
+                    continue
 
-            step_res = [res_e[0]]
-            step_lat = [lat_e[0]]
+                # build staircase envelope
+                idx = np.argsort(res_e)
+                res_e = res_e[idx]
+                lat_e = lat_e[idx]
 
-            for j in range(1, len(res_e)):
-                step_res.append(res_e[j])
-                step_lat.append(step_lat[-1])
-                step_res.append(res_e[j])
-                step_lat.append(lat_e[j])
+                step_res = [res_e[0]]
+                step_lat = [lat_e[0]]
 
-            color = zone_cmap(i % zone_cmap.N)
+                for j in range(1, len(res_e)):
+                    step_res.append(res_e[j])
+                    step_lat.append(step_lat[-1])
+                    step_res.append(res_e[j])
+                    step_lat.append(lat_e[j])
 
-            # fill ONLY above the envelope
-            plt.fill_between(
-                step_res,
-                step_lat,
-                lat_max,
-                color=color,
-                alpha=0.12,
-                zorder=0,
-            )
+                color = zone_cmap(i % zone_cmap.N)
 
-            # optional: draw envelope edge for readability
-            plt.plot(
-                step_res,
-                step_lat,
-                color=color,
-                linewidth=1.2,
-                alpha=0.9,
-                zorder=2,
-            )
+                # fill ONLY above the envelope
+                plt.fill_between(
+                    step_res,
+                    step_lat,
+                    lat_max,
+                    color=color,
+                    alpha=0.12,
+                    zorder=0,
+                )
 
+                # Add envelope label (A, B, C, D...) in black bold
+                label = letters[i % len(letters)]
+
+                # Find middle index of the staircase
+                mid_idx = len(step_res) // 2
+
+
+                # Position: slightly above the first step
+                # plt.text(
+                #     step_res[mid_idx],                    # x = middle of envelope
+                #     step_lat[mid_idx] + 0.02 * lat_max,  # y = slightly above
+                #     label,
+                #     color="black",
+                #     fontweight="bold",
+                #     fontsize=12,
+                #     ha='center',  # horizontally center the text
+                #     va='bottom',  # vertically align text above the point
+                #     zorder=3
+                # )
+
+
+        # there is a problem with the envelopes C or D
 
 
 
