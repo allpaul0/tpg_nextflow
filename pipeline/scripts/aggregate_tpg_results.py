@@ -3067,6 +3067,174 @@ class TPGResultsAggregator:
 
 
         plt.show()
+
+        ##################################################
+    # Ratio performance / resources tables
+    ##################################################
+
+    from statistics import mean
+
+    # 1. Extract latency and ressource data per TPG
+    def extract_latency_resources(self, data, tpg_key):
+        """
+        tpg_key = (iset, dtype)
+        Returns:
+            lat: dict[uarch] -> latency (CC)
+            res: dict[uarch] -> norm_ressource
+        """
+        lat = {}
+        res = {}
+
+        for tpg, uarch_map in data.items():
+            for uarch, isa_map in uarch_map.items():
+                for isa, archgroup in isa_map.items():
+                    if (archgroup.iset, archgroup.dtype) != tpg_key:
+                        continue
+                    if not archgroup.seeds:
+                        continue
+
+                    lat[uarch] = mean(s.mean for s in archgroup.seeds)
+                    res[uarch] = archgroup.norm_ressource
+
+        return lat, res
+
+    # 2. Define Uarchs deltas
+    MECHANISM_DELTAS = {
+        "RF e→i (16→32)": [
+            ("e2_im0d1", "e2_em0d1"),
+            ("e2_im1d1", "e2_em1d1"),
+            ("e2_im2d1", "e2_em2d1"),
+            ("e2_im3d1", "e2_em3d1"),
+            ("e4_im0d0", "e4_em0d0"),
+            ("e4_im4d0", "e4_em4d0"),
+            ("e4_im4d2", "e4_em4d2"),
+        ],
+
+        "Divider d0→d2": [
+            ("e4_im4d2", "e4_im4d0"),
+            ("e4_em4d2", "e4_em4d0"),
+        ],
+
+        "Multiplier m0→m1": [
+            ("e2_em1d1", "e2_em0d1"),
+            ("e2_im1d1", "e2_im0d1"),
+        ],
+
+        "Multiplier m1→m2": [
+            ("e2_em2d1", "e2_em1d1"),
+            ("e2_im2d1", "e2_im1d1"),
+        ],
+
+        "Multiplier m2→m3": [
+            ("e2_em3d1", "e2_em2d1"),
+            ("e2_im3d1", "e2_im2d1"),
+        ],
+
+        "PULP extension": [
+            ("e4_im5d2_pulp", "e4_im5d2"),
+        ],
+
+        "FPU extension": [
+            ("e4_im5d2_fpu", "e4_im5d2"),
+        ],
+
+        "PULP on FPU": [
+            ("e4_im5d2_pulp_fpu", "e4_im5d2_fpu"),
+        ],
+    }
+
+
+    # 3. Compute average latency gains per mechanism (per TPG)
+    def compute_latency_gains(self, lat, deltas):
+        """
+        lat: dict[uarch] -> latency
+        deltas: list of (new, old)
+        """
+        values = []
+        for new, old in deltas:
+            if new in lat and old in lat:
+                values.append(lat[new] - lat[old])
+
+        if not values:
+            return None
+
+        return float(np.mean(values))
+
+    # 4. Performance / resource ratio (per uarch)
+    def compute_perf_resource_ratio(self, lat, res):
+        ratio = {}
+        for uarch in lat:
+            if uarch in res and lat[uarch] > 0:
+                ratio[uarch] = 1.0 / (lat[uarch] * res[uarch])
+        return ratio
+
+    # 5. Build the table per TPG
+    def build_tpg_table(self, data, tpg_key):
+        lat, res = self.extract_latency_resources(data, tpg_key)
+
+        table = {}
+
+        # latency deltas
+        for name, pairs in self.MECHANISM_DELTAS.items():
+            delta = self.compute_latency_gains(lat, pairs)
+            table[name] = delta
+
+        # perf/resource summary
+        ratios = self.compute_perf_resource_ratio(lat, res)
+        table["Best perf/resource"] = max(ratios.values()) if ratios else None
+        table["Worst perf/resource"] = min(ratios.values()) if ratios else None
+
+        return table
+    
+    def build_ratio_perf_to_res_tables(self, data):
+        tables = {}
+
+        for tpg, uarch_map in data.items():
+            for uarch, isa_map in uarch_map.items():
+                for isa, archgroup in isa_map.items():
+                    key = (archgroup.iset, archgroup.dtype)
+                    tables[key] = self.build_tpg_table(data, key)
+
+        return tables
+
+    def sanitize_iset_name(self, iset):
+        """
+        replace symbols in iset name to make it filename-safe
+        """
+        replacements = {
+            #'{': 'braceopen_',
+            #'}': 'braceclose_',
+            #',': '_',
+            '>': 'gt',
+            '+': 'plus',
+            '-': 'minus',
+            '*': 'mul',
+            '/': 'div',
+        }
+        for old, new in replacements.items():
+            iset = iset.replace(old, new)
+        return iset
+
+    def save_ratio_perf_to_res_tables(self, tables):
+        """
+        save in dir "result_out/tables_perf_res/*"
+        """
+        import pandas as pd
+
+        out_dir = Path(self.out) / "tables_perf_res"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for tpg_key, table in tables.items():
+            iset, dtype = tpg_key
+            
+            # replace iset symbols by strings
+            iset = self.sanitize_iset_name(iset)
+
+            df = pd.DataFrame.from_dict(table, orient='index', columns=['Value'])
+            filename = f"table_perf_res_{iset}_{dtype.replace(' ', '_')}.csv"
+            out_path = out_dir / filename
+            df.to_csv(out_path)
+            print(f"INFO: saved perf/res table for TPG {iset} {dtype} to {out_path}")
+
     
 # -----------------------------
 # CLI / main
@@ -3137,7 +3305,9 @@ def main(argv: Optional[List[str]]=None):
     # print(f"INFO: saved up to {args.max_per_tpg} per-TPG plots in {out_dir}")
 
 
-
+    # 5. ratio perf / res tables
+    tables = agg.build_ratio_perf_to_res_tables(data)
+    agg.save_ratio_perf_to_res_tables(tables)
     
 
     # quick summary printed
