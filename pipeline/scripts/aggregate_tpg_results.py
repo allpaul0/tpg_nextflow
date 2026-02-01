@@ -329,14 +329,14 @@ class TPGResultsAggregator:
                
         # e4x_i-em0,1,2 -> renommage
         simulator = simulator.replace("e4x_im0", "e4x_im0d0") #  pas de mult, pas de div
-        simulator = simulator.replace("e4x_im1", "e4x_im4d2") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("e4x_im1", "e4x_im4d1") # change mult -> basé ressources, ajoute div
         simulator = simulator.replace("e4x_im2", "e4x_im4d0") # change mult -> basé ressources, ajoute div
 
         simulator = simulator.replace("e4x_em0", "e4x_em0d0") # pas de mult, pas de div
-        simulator = simulator.replace("e4x_em1", "e4x_em4d2") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("e4x_em1", "e4x_em4d1") # change mult -> basé ressources, ajoute div
         simulator = simulator.replace("e4x_em2", "e4x_em4d0") # change mult -> basé ressources, ajoute div
 
-        simulator = simulator.replace("e4px", "e4x_im5d2") # ajout mult dsp -> basé ressources
+        simulator = simulator.replace("e4px", "e4x_im5d1") # ajout mult dsp -> basé ressources
 
         # e2_i-em0-3 -> add div
         simulator = simulator.replace("e2_im0", "e2_im0d1")
@@ -1260,16 +1260,16 @@ class TPGResultsAggregator:
             
             "e4_em0d0",
             "e4_em4d0",
-            "e4_em4d2",
+            "e4_em4d1",
 
             "e4_im0d0",
             "e4_im4d0",
-            "e4_im4d2",
+            "e4_im4d1",
             
-            "e4_im5d2",
-            "e4_im5d2_pulp",
-            "e4_im5d2_fpu",
-            "e4_im5d2_pulp_fpu",
+            "e4_im5d1",
+            "e4_im5d1_pulp",
+            "e4_im5d1_fpu",
+            "e4_im5d1_pulp_fpu",
         ]
 
         # Map each string to its order index
@@ -2043,16 +2043,16 @@ class TPGResultsAggregator:
             
             "e4_em0d0",
             "e4_em4d0",
-            "e4_em4d2",
+            "e4_em4d1",
 
             "e4_im0d0",
             "e4_im4d0",
-            "e4_im4d2",
+            "e4_im4d1",
 
-            "e4_im5d2",
-            "e4_im5d2_pulp",
-            "e4_im5d2_fpu",
-            "e4_im5d2_pulp_fpu",
+            "e4_im5d1",
+            "e4_im5d1_pulp",
+            "e4_im5d1_fpu",
+            "e4_im5d1_pulp_fpu",
         ]
 
         # Map each string to its order index
@@ -2672,10 +2672,10 @@ class TPGResultsAggregator:
         uarch_custom_order = [
             "e2_em0d1", "e2_em1d1", "e2_em2d1", "e2_em3d1",
             "e2_im0d1", "e2_im1d1", "e2_im2d1", "e2_im3d1",
-            "e4_em0d0", "e4_em4d0", "e4_em4d2",
-            "e4_im0d0", "e4_im4d0", "e4_im4d2",
-            "e4_im5d2", "e4_im5d2_pulp",
-            "e4_im5d2_fpu", "e4_im5d2_pulp_fpu",
+            "e4_em0d0", "e4_em4d0", "e4_em4d1",
+            "e4_im0d0", "e4_im4d0", "e4_im4d1",
+            "e4_im5d1", "e4_im5d1_pulp",
+            "e4_im5d1_fpu", "e4_im5d1_pulp_fpu",
         ]
         uarch_order_index = {s: i for i, s in enumerate(uarch_custom_order)}
 
@@ -2775,7 +2775,7 @@ class TPGResultsAggregator:
         plt.figure(figsize=(18.5, 9))
 
 
-        draw_accuracy_enveloppes = True
+        draw_accuracy_enveloppes = False
         if draw_accuracy_enveloppes:
             def build_staircase(res, lat):
                 idx = np.argsort(res)
@@ -3107,12 +3107,12 @@ class TPGResultsAggregator:
             ("e2_im3d1", "e2_em3d1"),
             ("e4_im0d0", "e4_em0d0"),
             ("e4_im4d0", "e4_em4d0"),
-            ("e4_im4d2", "e4_em4d2"),
+            ("e4_im4d1", "e4_em4d1"),
         ],
 
-        "Divider d0→d2": [
-            ("e4_im4d2", "e4_im4d0"),
-            ("e4_em4d2", "e4_em4d0"),
+        "Divider d0→d1": [
+            ("e4_im4d1", "e4_im4d0"),
+            ("e4_em4d1", "e4_em4d0"),
         ],
 
         "Multiplier m0→m1": [
@@ -3131,15 +3131,15 @@ class TPGResultsAggregator:
         ],
 
         "PULP extension": [
-            ("e4_im5d2_pulp", "e4_im5d2"),
+            ("e4_im5d1_pulp", "e4_im5d1"),
         ],
 
         "FPU extension": [
-            ("e4_im5d2_fpu", "e4_im5d2"),
+            ("e4_im5d1_fpu", "e4_im5d1"),
         ],
 
         "PULP on FPU": [
-            ("e4_im5d2_pulp_fpu", "e4_im5d2_fpu"),
+            ("e4_im5d1_pulp_fpu", "e4_im5d1_fpu"),
         ],
     }
 
@@ -3306,8 +3306,8 @@ def main(argv: Optional[List[str]]=None):
 
 
     # 5. ratio perf / res tables
-    tables = agg.build_ratio_perf_to_res_tables(data)
-    agg.save_ratio_perf_to_res_tables(tables)
+    #tables = agg.build_ratio_perf_to_res_tables(data)
+    #agg.save_ratio_perf_to_res_tables(tables)
     
 
     # quick summary printed
