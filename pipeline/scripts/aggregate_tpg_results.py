@@ -4,7 +4,7 @@
 Aggregate TPG inference JSON results into CSV and plots.
 
 Usage:
-    python scripts/aggregate_tpg_results.py --root tpg_expe --out results_out
+    python scripts/aggregate_tpg_results.py --root tpg_expe --out figures
 
 Behavior:
 - Recursively finds JSON files under <root>/training_results/*/inference/results/*.json
@@ -3060,7 +3060,7 @@ class TPGResultsAggregator:
 
         # ---- export to PDF ----
         plt.savefig(
-            "pareto_front_ress_lat_projection.pdf",
+            self.out / "pareto_front_ress_lat_projection.pdf",
             format="pdf",
             bbox_inches="tight"
         )
@@ -3241,7 +3241,7 @@ class TPGResultsAggregator:
 # -----------------------------
 
 def main(argv: Optional[List[str]]=None):
-    agg = TPGResultsAggregator("tpg_expe", "results_out")
+    agg = TPGResultsAggregator("tpg_expe", "figures")
 
     json_config_files = agg.find_json_files("configs")
     json_result_files = agg.find_json_files("results")
@@ -3250,6 +3250,7 @@ def main(argv: Optional[List[str]]=None):
         
     data = agg.build_hierarchical_data(json_result_files)
 
+    csv_accuracies_path = "tpg_expe/accuracy_results/results.csv"
     df = agg.aggregate_data(data)
     df_avg = agg.aggregate_averaged_data(data)
 

@@ -9,7 +9,7 @@ process parse_results {
     output:
     path "results.csv"
 
-    publishDir "${params.outdir}/parsed_results", mode: 'copy'
+    publishDir "${params.outdir}/accuracy_results", mode: 'copy'
 
     // This script aggregates training results from multiple experiment folders into a single CSV file. 
     script:
