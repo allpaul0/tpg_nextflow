@@ -103,7 +103,8 @@ cd /
 ```
 
 ## Production
-## Create an overlay (a writable overlay FS, binded at runtime)
+### Create an overlay 
+(a writable overlay FS, binded at runtime)
 Creates a 512MB overlay.
 ```bash
 apptainer overlay create --size 512 containers/overlay.img
@@ -114,7 +115,7 @@ Bind the overlay to the apptainer.
 apptainer shell --overlay containers/overlay.img containers/x-heep.sif 
 ```
 
-## Development
+### Development
 
 Bind a dir to the apptainer.
 ```bash
@@ -123,13 +124,13 @@ apptainer shell --bind x-heep:/opt/x-heep containers/x-heep.sif
 
 Do not use `apptainer run` to enter the `x-heep.sif` container, use `apptainer shell`, which allows to preserve defined environment variables from the def file
 
-## Development inference 
+### Development inference 
 
 ```bash
 ./launcher.sh --target=inference --mini_config=1
 ```
 
-## Delete every inference folder under tpg_expe/
+### Delete every inference folder under tpg_expe/
 ```bash
 find tpg_expe/*/* -type d -name "inference" -exec rm -r {} +
 ```
@@ -153,7 +154,8 @@ hjson not found
 main.c not found
 ```
 
-## tpg_expe composition of the results
+
+## TPG experiments (tpg_expe) composition of the results
 ```bash
 {fixedpt, float, double} × {base, expln, trigo, complete} + {fixedpt} {exp2log2} x {base, baseBare, base_zmmul} 
 
