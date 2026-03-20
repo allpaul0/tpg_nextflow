@@ -2714,9 +2714,22 @@ class TPGResultsAggregator:
         dists, latencies, ressources = [], [], []
         points_meta = []
 
+        exclude_isets = {
+            "{log2,exp2,>,-,+}",
+            "{log2,exp2,*,>,-,+}",
+            "{log2,exp2,*,/,>,-,+}",}
+
+        exclude_dtypes = {
+            }
+
         for tpg, uarch_map in sorted(data.items()):
             for uarch, isa_map in sorted(uarch_map.items()):
                 for isa, archgroup in sorted(isa_map.items()):
+                    
+                    # ---- Skip excluded GPIS ----
+                    if archgroup.iset in exclude_isets or archgroup.dtype in exclude_dtypes:
+                        continue
+
                     if (
                         archgroup.accuracy is not None
                         and archgroup.norm_ressource is not None
