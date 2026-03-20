@@ -1,16 +1,23 @@
 # TPG Nextflow Pipeline
 
-This project automates the generation, training, and code generation of Tangled Program Graphs (TPG) using Nextflow and Apptainer containers.
+This project automates the definition, training, code generation, compilation, execution of Tangled Program Graphs (TPG) using Nextflow and Apptainer containers.
+
+
 
 ## Features
 
 - **Containerized:** Uses Apptainer for reproducible environments.
 
+### train.nf
 - **Config Generation:** Automatically creates experiment configurations varying instruction sets and data types.
 - **Training:** Trains TPG models in parallel using SLURM.
 - **Result Parsing:** Aggregates training results for analysis.
+### prepare_inference.nf
 - **Code Generation:** Generates and patches C code for trained TPGs.
-- **Inference:** Realize inference on the Learning Environment.
+- **Learning Environment states export:** Finds states of the Learning Environment leading to specific traversals of the TPG
+- **Build Executable:** Builds the executable using appropriate params
+### inference.nf
+- **Inference:** Realize inference on the Learning Environment using the simulator and the appropriate microarchitecture
 
 ## Repository structure
 
