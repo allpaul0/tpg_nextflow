@@ -3450,6 +3450,27 @@ class TPGResultsAggregator:
         # plt.savefig(fig_path, bbox_inches="tight")
         # print(f"Saved per-class latency violin plot to {fig_path}")
 
+    def print_keys(self, data):
+        uarchs = set()
+        isas = set()
+        isets = set()
+        dtypes = set()
+
+        for _, uarch_map in data.items():
+            for uarch, isa_map in uarch_map.items():
+                uarchs.add(uarch)
+                for isa, archgroup in isa_map.items():
+                    isas.add(isa)
+                    isets.add(archgroup.iset)
+                    dtypes.add(archgroup.dtype)
+
+        print("uarchs:", sorted(uarchs))
+        print("isas:", sorted(isas))
+        print("isets:", sorted(isets))
+        print("dtypes:", sorted(dtypes))
+
+
+
 # -----------------------------
 # CLI / main
 # -----------------------------
@@ -3531,21 +3552,23 @@ def main(argv: Optional[List[str]]=None):
     ### Ratio perf / res tables ###
 
     ### Plotting of latency distribution for each seed of the same TPG and uarch  ### 
-    agg.plot_latency_distribution_per_class(data,
-        iset="{log2,exp2,>,-,+}",
-        dtype="fixedpt",
-        uarch="e4_im4d1",
-        isa="rv32imc",
-    )
+    # agg.plot_latency_distribution_per_class(data,
+    #     iset="{log2,exp2,>,-,+}",
+    #     dtype="fixedpt",
+    #     uarch="e4_im4d1",
+    #     isa="rv32imc",
+    # )
 
-    agg.plot_latency_distribution_per_class(
-        data,
-        iset="{log2,exp2,>,-,+}",
-        dtype="fixedpt",
-        uarch="e2_em0d1",
-        isa="rv32e",
-    )
+    # agg.plot_latency_distribution_per_class(
+    #     data,
+    #     iset="{log2,exp2,>,-,+}",
+    #     dtype="fixedpt",
+    #     uarch="e2_em0d1",
+    #     isa="rv32e",
+    # )
 
+    # print every uarch, tpg and isa key
+    agg.print_keys(data)
 
     # 5. ratio perf / res tables
     # tables = agg.build_ratio_perf_to_res_tables(data)
