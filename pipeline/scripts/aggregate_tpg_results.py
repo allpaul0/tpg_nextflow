@@ -51,6 +51,13 @@ class SeedResult:
     avg_nb_instr: Optional[float] = None
     avg_nb_evaluated_programs: Optional[float] = None
     avg_nb_evaluated_teams: Optional[float] = None
+    inference_results: Optional[PerClassInferenceResult] = None
+
+@dataclass
+class PerClassInferenceResult:
+    count: int
+    AvgCyclesPerClass: int
+    StddevCyclesPerClass: int
 
 @dataclass
 class ArchGroup:
@@ -69,6 +76,8 @@ class ArchGroup:
 # -----------------------------
 # Helpers
 # -----------------------------
+def nested_defaultdict():
+    return defaultdict(dict)
 
 # -----------------------------
 # Class-based aggregator
@@ -165,9 +174,9 @@ class TPGResultsAggregator:
         print(f"{len(files)} " + folder_type + " files")
         return files
 
-    def load_json_minimal(self, path: Path) -> Optional[Dict[str, Any]]:
+    def load_json_json_data(self, path: Path) -> Optional[Dict[str, Any]]:
         """
-        Load JSON and validate required keys. Return minimal dict or None on failure.
+        Load JSON and validate required keys. Return json_data dict or None on failure.
         """
         required = {"simulator", "isa", "abi", "dtype", "tpg_mean_latency", "tpg_stddev_latency"}
         try:
@@ -196,6 +205,19 @@ class TPGResultsAggregator:
             "tpg_mean_latency": mean_val,
             "tpg_stddev_latency": std_val,
         }
+
+    def load_json_full(self, path: Path) -> Optional[Dict[str, Any]]:
+        """
+        Load JSON file fully. Return None on failure.
+        """
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data
+        except Exception as e:
+            print(f"WARNING: Failed to load JSON {path}: {e}", file=sys.stderr)
+            return None
+
 
     def find_nbInstr_json_files(self) -> List[Path]:
         """
@@ -358,19 +380,24 @@ class TPGResultsAggregator:
     # Core pipeline
     # -----------------------------
 
-    def build_hierarchical_data(self, json_files: List[Path]) -> Dict[str, Dict[str, Dict[str, ArchGroup]]]:
+    def build_hierarchical_data(self, json_files: List[Path], perClassInferenceResults: bool) -> Dict[str, Dict[str, Dict[str, ArchGroup]]]:
         
         """
         Build data[tpg_config][uarch][isa] -> ArchGroup
         each tpg is evaluated on multiple uarchs -> dic
         each of those uarchs is evaluated on multiple isa -> dic 
         """
-        data: Dict[str, Dict[str, Dict[str, ArchGroup]]] = defaultdict(lambda: defaultdict(dict))
+        data: Dict[str, Dict[str, Dict[str, ArchGroup]]] = defaultdict(nested_defaultdict)
 
         skipped = 0
         for jf in json_files:
-            minimal = self.load_json_minimal(jf)
-            if minimal is None:
+
+            if perClassInferenceResults:
+                json_data = self.load_json_full(jf)
+            else:
+                json_data = self.load_json_minimal(jf)
+
+            if json_data is None:
                 skipped += 1
                 continue
             try:
@@ -384,10 +411,10 @@ class TPGResultsAggregator:
             tpg_dir_name = tpg_dir.name
             tpg_canonical, seed = self.canonicalize_tpg_dir(tpg_dir_name)
 
-            simulator = minimal["simulator"]
-            isa=minimal["isa"]
-            abi=minimal["abi"]
-            dtype=minimal["dtype"]
+            simulator = json_data["simulator"]
+            isa=json_data["isa"]
+            abi=json_data["abi"]
+            dtype=json_data["dtype"]
 
             iset = self.assign_iset_operator_nickname(tpg_canonical)
             simulator_nickname = self.assign_simulator_nickname(simulator)
@@ -407,12 +434,27 @@ class TPGResultsAggregator:
 
             # Append seed result
             seed_result = SeedResult(
-                mean=minimal["tpg_mean_latency"],
-                stddev=minimal["tpg_stddev_latency"],
+                mean=json_data["tpg_mean_latency"],
+                stddev=json_data["tpg_stddev_latency"],
                 seed = seed
                 #source_file=jf,
                 #tpg_dir_name = tpg_dir_name
             )
+
+            if perClassInferenceResults:
+                records = json_data.get("records", [])
+                inference_results = []
+                for rec in records:
+                    try:
+                        inference_results.append(PerClassInferenceResult(
+                            count=rec.get("Count", 0),
+                            AvgCyclesPerClass=rec.get("AvgCyclesPerClass", 0),
+                            StddevCyclesPerClass=rec.get("StddevCyclesPerClass", 0)
+                        ))
+                    except Exception as e:
+                        print(f"WARNING: Failed to parse record in {jf}: {e}", file=sys.stderr)
+                seed_result.inference_results = inference_results
+
             data[tpg_canonical][simulator_nickname][isa_nickname].seeds.append(seed_result)
 
         if skipped:
@@ -2715,9 +2757,10 @@ class TPGResultsAggregator:
         points_meta = []
 
         exclude_isets = {
-            "{log2,exp2,>,-,+}",
-            "{log2,exp2,*,>,-,+}",
-            "{log2,exp2,*,/,>,-,+}",}
+            # "{log2,exp2,>,-,+}",
+            # "{log2,exp2,*,>,-,+}",
+            # "{log2,exp2,*,/,>,-,+}",
+        }
 
         exclude_dtypes = {
             }
@@ -2971,7 +3014,7 @@ class TPGResultsAggregator:
             lat = np.array([p[1] for p in pts])
             meta_list = [p[2] for p in pts]
 
-            # select the "best" point (minimal resources)
+            # select the "best" point (json_data resources)
             best_idx = np.argmin(res)
             best_meta = meta_list[best_idx]
 
@@ -3105,7 +3148,7 @@ class TPGResultsAggregator:
 
         plt.show()
 
-        ##################################################
+    ##################################################
     # Ratio performance / resources tables
     ##################################################
 
@@ -3272,7 +3315,141 @@ class TPGResultsAggregator:
             df.to_csv(out_path)
             print(f"INFO: saved perf/res table for TPG {iset} {dtype} to {out_path}")
 
-    
+    def plot_latency_distribution_per_class(
+        self,
+        data: Dict[str, Dict[str, Dict[str, ArchGroup]]],
+        iset: str,
+        dtype: str,
+        uarch: str,
+        isa: str
+    ):
+        """
+        Draw a violin plot of per-class inference latencies for each TPG corresponding 
+        to the specified iset, dtype, uarch, and isa.
+        Each violin represents all AvgCyclesPerClass values across all seeds.
+        """
+
+        float_color = '#252323'
+        fixedpt_color = '#540b0e'
+
+        # --- Check if uarch exists ---
+        uarch_found = any(uarch in uarch_map for tpg, uarch_map in data.items())
+        if not uarch_found:
+            print(f"WARNING: uarch '{uarch}' not found in any TPG.")
+            return
+
+        # --- Check if isa exists under this uarch ---
+        isa_found = any(isa in uarch_map.get(uarch, {}) for tpg, uarch_map in data.items())
+        if not isa_found:
+            print(f"WARNING: isa '{isa}' not found under uarch '{uarch}'.")
+            return
+
+        # --- Check if iset or dtype exists among matching groups ---
+        tpgs_matching = []
+        for tpg_name, uarch_map in data.items():
+            if uarch not in uarch_map:
+                continue
+            isa_map = uarch_map[uarch]
+            if isa not in isa_map:
+                continue
+            group = isa_map[isa]
+            if group.iset != iset:
+                continue
+            if group.dtype != dtype:
+                continue
+            tpgs_matching.append(group)
+
+
+        if not tpgs_matching:
+            # Check individually which filter is missing
+
+            iset_found = any(
+                group.iset == iset
+                for tpg_name, uarch_map in data.items()
+                if uarch in uarch_map and isa in uarch_map[uarch]
+                for group in [uarch_map[uarch][isa]]
+            )
+            dtype_found = any(
+                group.dtype == dtype
+                for tpg_name, uarch_map in data.items()
+                if uarch in uarch_map and isa in uarch_map[uarch]
+                for group in [uarch_map[uarch][isa]]
+            )
+
+            if not iset_found:
+                print(f"WARNING: iset '{iset}' not found for uarch '{uarch}' and isa '{isa}'.")
+            if not dtype_found:
+                print(f"WARNING: dtype '{dtype}' not found for uarch '{uarch}', isa '{isa}', iset '{iset}'.")
+            return
+
+            # --- Prepare data for violin plot ---
+
+        datasets = []
+        labels = []
+
+        for group in tpgs_matching:
+            for seed in group.seeds:
+                if not seed.inference_results:
+                    continue
+
+                # Make seed-specific label
+                label = f"{seed.seed}"
+                samples_this_seed = []
+
+                for r in seed.inference_results:
+                    try:
+                        count = int(getattr(r, "count", r.get("count") if isinstance(r, dict) else 0))
+                        mu = float(getattr(r, "AvgCyclesPerClass", r.get("AvgCyclesPerClass") if isinstance(r, dict) else 0))
+                        sigma = float(getattr(r, "StddevCyclesPerClass", r.get("StddevCyclesPerClass") if isinstance(r, dict) else 0))
+                    except Exception as e:
+                        print(f"WARNING: malformed inference record for {label}: {e}", file=sys.stderr)
+                        continue
+
+                    if count <= 0:
+                        continue
+
+                    sigma = sigma if sigma > 0 else 1e-6
+
+                    samples = np.random.normal(mu, sigma, size=count)
+                    samples_this_seed.extend(samples.tolist())
+
+                if samples_this_seed:
+                    datasets.append(np.array(samples_this_seed))
+                    labels.append(label)
+
+        if not datasets:
+            print(f"WARNING: No per-class inference samples found for uarch={uarch}, isa={isa}, iset={iset}, dtype={dtype}")
+            return
+
+        # Sort datasets by numeric seed label
+        sorted_pairs = sorted(
+            zip(labels, datasets),
+            key=lambda x: int(x[0])  # sort by seed number
+        )
+
+        labels, datasets = zip(*sorted_pairs)
+
+        labels = list(labels)
+        datasets = list(datasets)
+
+        # -----------------------------
+        # Plot violin for all datasets
+        # -----------------------------
+        plt.figure(figsize=(12, 6))
+        plt.violinplot(datasets, showmeans=True, showmedians=True)
+        plt.xticks(range(1, len(datasets) + 1), labels, rotation=45, ha="right")
+        plt.ylabel("Latency (cycles)")
+        plt.title(f"Per-seed latency distribution — uarch={uarch} isa={isa} iset={iset} dtype={dtype}")
+        plt.grid(axis="y", linestyle="--", alpha=0.6)
+        plt.tight_layout()
+        plt.show()
+
+        # Save figure
+        # safe_name = self.sanitize_filename(f"violin_{uarch}_{isa}_{iset}_{dtype}.png")
+        # fig_path = self.out / safe_name
+        # plt.savefig(fig_path, bbox_inches="tight")
+        # print(f"Saved per-class latency violin plot to {fig_path}")
+
 # -----------------------------
 # CLI / main
 # -----------------------------
@@ -3287,7 +3464,10 @@ def main(argv: Optional[List[str]]=None):
         # json_config_files = agg.find_json_files("configs")
         json_result_files = agg.find_json_files("results")
         
-        data = agg.build_hierarchical_data(json_result_files)
+        perClassInferenceResults = True
+
+        # build the data dictionnary
+        data = agg.build_hierarchical_data(json_result_files, perClassInferenceResults)
 
         ### Add IPC informations ###
 
@@ -3349,6 +3529,23 @@ def main(argv: Optional[List[str]]=None):
     # agg.plot_tpg_ipc_across_uarchs_one_plot(data)
 
     ### Ratio perf / res tables ###
+
+    ### Plotting of latency distribution for each seed of the same TPG and uarch  ### 
+    agg.plot_latency_distribution_per_class(data,
+        iset="{log2,exp2,>,-,+}",
+        dtype="fixedpt",
+        uarch="e4_im4d1",
+        isa="rv32imc",
+    )
+
+    agg.plot_latency_distribution_per_class(
+        data,
+        iset="{log2,exp2,>,-,+}",
+        dtype="fixedpt",
+        uarch="e2_em0d1",
+        isa="rv32e",
+    )
+
 
     # 5. ratio perf / res tables
     # tables = agg.build_ratio_perf_to_res_tables(data)
