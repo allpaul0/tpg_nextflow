@@ -48,11 +48,11 @@ If the training time is not the **limiting factor** for the training, the **numb
 
 **Launching with miniconfig:**
 ```sh
-./launcher.sh --mini_config=1
+./launcher.sh --target=train --mini_config=1
 ```
 On SLURM clusters:
 ```sh
-sbatch --wrap="./launcher.sh --target=train --mini_config=2"
+sbatch --wrap="./launcher.sh --target=train --mini_config=1"
 ```
 
 ### What happens when lauching with miniconfig
@@ -106,8 +106,8 @@ cd /
 ## Production
 
 ### Create an overlay 
-(a writable overlay FS, binded at runtime)
-Creates a 512MB overlay.
+An overlay is a writable FS, binded at runtime, used to write in containers.
+Create a 512MB overlay.
 ```bash
 apptainer overlay create --size 512 containers/overlay.img
 ```
