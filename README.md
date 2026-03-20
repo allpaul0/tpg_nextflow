@@ -15,7 +15,7 @@ This project automates the definition, training, code generation, compilation, e
 ### prepare_inference.nf
 - **Code Generation:** Generates and patches C code for trained TPGs.
 - **Learning Environment states export:** Finds states of the Learning Environment leading to specific traversals of the TPG
-- **Build Executable:** Builds the executable using appropriate params
+- **Build Executable:** Builds the executable using appropriate params -> useless
 ### inference.nf
 - **Inference:** Realize inference on the Learning Environment using the simulator and the appropriate microarchitecture
 
