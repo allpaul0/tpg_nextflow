@@ -71,15 +71,17 @@ You can choose between two modes:
 
 ## slurm commands
 Check the progress of jobs 
-```
+```bash
 squeue
 ``` 
+
 Kill job 
 ```bash
 scancel $job_id
-```bash
+``` 
+
 Kill all my jobs
-```
+```bash
 scancel --user $user_id
 ```
 
@@ -128,24 +130,32 @@ Do not use `apptainer run` to enter the `x-heep.sif` container, use `apptainer s
 ```
 
 ## Delete every inference folder under tpg_expe/
+```bash
 find tpg_expe/*/* -type d -name "inference" -exec rm -r {} +
+```
 
 
-## Reccurent errors when using simulation script in x-heep 
+## Reccurent errors when using simulation script in x-heep 
 
-1. 
+1. You launch the simulation without running mcu-gen. 
+```bash
 make[4]: *** No rule to make target '../linker/link.ld', needed by 'main.elf'.  Stop.
-You launch the simulation without running mcu-gen. 
+```
 
-2.
+2. You ran apptainer run instead of apptainer shell -> the conda 
+environment was not instanciated
+```bash
 hjson not found 
-You ran apptainer run instead of apptainer shell -> the conda environment was not instanciated
+```
 
-3. main.c not found
-make app XXX -> wrong app name 
+3. make app XXX -> wrong app name 
+```bash
+main.c not found
+```
 
-## tpg_expe composition 
+## tpg_expe composition of the results
+```bash
 {fixedpt, float, double} × {base, expln, trigo, complete} + {fixedpt} {exp2log2} x {base, baseBare, base_zmmul} 
 
-De manière effective: 
 tpg_float_double, tpg_fixedpt_comp_logexp_trigo_complete, tpg_l2e2_zmmul_compbare_compExpAr
+```
