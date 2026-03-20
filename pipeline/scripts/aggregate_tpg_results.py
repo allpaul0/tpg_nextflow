@@ -419,6 +419,30 @@ class TPGResultsAggregator:
             print(f"INFO: skipped {skipped} files due to parse errors or unexpected structure", file=sys.stderr)
         return data
 
+    def save_data(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]], filename: str):
+        """
+        Save the aggregated data to a pickle file for later use.
+        """
+        import pickle
+        path = self.root / "inference_results" / filename
+        with path.open("wb") as f:
+            pickle.dump(data, f)
+        print(f"Aggregated data saved to {path}")
+
+    def load_data(self, filename: str) -> Dict[str, Dict[str, Dict[str, ArchGroup]]]:
+        """
+        Load the aggregated data from a pickle file.
+        """
+        import pickle
+        path = self.root / "inference_results" / filename
+        if not path.exists():
+            raise FileNotFoundError(f"Aggregated data file {path} not found.")
+        with path.open("rb") as f:
+            data = pickle.load(f)
+        print(f"Aggregated data loaded from {path}")
+        return data
+    
+
     def aggregate_data(self, data: Dict[str, Dict[str, Dict[str, ArchGroup]]]) -> pd.DataFrame:
         """
         Aggregates data 
@@ -3243,79 +3267,84 @@ class TPGResultsAggregator:
 def main(argv: Optional[List[str]]=None):
     agg = TPGResultsAggregator("tpg_expe", "figures")
 
-    json_config_files = agg.find_json_files("configs")
-    json_result_files = agg.find_json_files("results")
-    csv_accuracies_path = "tpg_expe/parsed_results/results.csv"
-    uarchs_ressources_path = "tpg_expe/uarch_results/uarchs_ressources.pkl"
+    # set to True to re-parse json files and re-build the data dict, 
+    # or False to load previously saved data (for quick re-runs without re-parsing)
+    data_collection = True
+    if data_collection:
+        # json_config_files = agg.find_json_files("configs")
+        json_result_files = agg.find_json_files("results")
         
-    data = agg.build_hierarchical_data(json_result_files)
+        data = agg.build_hierarchical_data(json_result_files)
+
+        ### Add IPC informations ###
+
+        # 1. get a list of path towards nbInstr json files 
+        nbInstr_json_files = agg.find_nbInstr_json_files()
+
+        # 2. Enrich the data dict with IPC informations 
+        # nbInstr infos are tpg dependent. 
+        # data[tpg][uarch][isa] -> will not vary for uarch and isa
+        agg.import_tpg_nbInstr(data, nbInstr_json_files)
+
+        ### IPC informations added ### 
+        
+        # dump data since data collection is done, the rest of the script is undependent 
+        # and can be re-run without re-parsing json files
+        agg.save_data(data, "inference_data.pkl")
 
     csv_accuracies_path = "tpg_expe/accuracy_results/results.csv"
+    uarchs_ressources_path = "tpg_expe/uarch_results/uarchs_ressources.pkl"
+
+    # load data (for quick re-runs without re-parsing json files)
+    data = agg.load_data("inference_data.pkl")
+
     df = agg.aggregate_data(data)
     df_avg = agg.aggregate_averaged_data(data)
 
     #agg.save_csv(df, "aggregated_tpg_results.csv")
     #agg.save_csv(df_avg, "aggregated_averaged_tpg_results.csv")
 
-    #agg.plot_x_axis_uarchs_y_axis_one_tpg(data)
-    #agg.plot_x_axis_tpgs_y_axis_one_uarch(data)
+    ### Plotting/Saving a single figure per uarch / per tpg ###
 
-    #agg.plot_x_axis_tpgs_y_axis_all_uarchs(data)
-    #agg.plot_x_axis_tpgs_y_axis_all_uarchs_min_max(data)
+    # agg.plot_x_axis_uarchs_y_axis_one_tpg(data)
+    # agg.plot_x_axis_tpgs_y_axis_one_uarch(data)
 
-    # agg.plot_x_axis_uarchs_y_axis_all_tpgs(data)
+    # agg.plot_x_axis_tpgs_y_axis_all_uarchs(data)
+    # agg.plot_x_axis_tpgs_y_axis_all_uarchs_min_max(data)
+
+    # agg.plot_x_axis_uarchs_y_axis_all_tpgs(data)
 
     agg.import_tpg_accuracies(data, csv_accuracies_path)
-    #agg.plot_pareto_front_acc_lat(data)
+    # agg.plot_pareto_front_acc_lat(data)
 
     agg.import_uarch_ressources(data, uarchs_ressources_path)
     agg.assign_normalized_ressources(data)
-    #agg.plot_pareto_front_ress_lat(data)
-
     
+    # agg.plot_pareto_front_ress_lat(data)
 
+    # 3D pareto front acc, lat, ress
+    # agg.plot_pareto_front_dist_lat_ress_3d(data)
 
-    # Building IPC analysis 
-
-    # 1. get a list of path towards nbInstr json files 
-    nbInstr_json_files = agg.find_nbInstr_json_files()
-
-    # 2. Enrich the data dict with IPC informations 
-    # nbInstr infos are tpg dependent. 
-    # data[tpg][uarch][isa] -> will not vary for uarch and isa
-    agg.import_tpg_nbInstr(data, nbInstr_json_files)
-
-    # 3. plot 
-    # agg.plot_tpg_ipc_all_uarch_one_plot_each(data)
-    # agg.plot_tpg_ipc_all_uarch_averaged(data)
-    #agg.plot_tpg_ipc_across_uarchs_one_plot(data)
-
-    # 4. 3D pareto front acc, lat, ress
-    #agg.plot_pareto_front_dist_lat_ress_3d(data)
+    # 3D pareto front projected on ress × lat, with accuracy annotations
     agg.plot_pareto_front_ress_lat_projection(data)
 
+    ### IPC analysis ###
 
+    # 3. plot ipc
+    # agg.plot_tpg_ipc_all_uarch_one_plot_each(data)
+    # agg.plot_tpg_ipc_all_uarch_averaged(data)
+    # agg.plot_tpg_ipc_across_uarchs_one_plot(data)
 
-
-    # Combined plot ?? Not sure what this is 
-    # combined_png = out_dir / "combined_latency_by_tpg.png"
-    # agg.plot_combined(df, combined_png)
-    # print(f"INFO: saved combined plot to {combined_png}")
-
-    # agg.plot_per_tpg_bar(df, out_dir, max_plots=args.max_per_tpg)
-    # print(f"INFO: saved up to {args.max_per_tpg} per-TPG plots in {out_dir}")
-
+    ### Ratio perf / res tables ###
 
     # 5. ratio perf / res tables
-    #tables = agg.build_ratio_perf_to_res_tables(data)
-    #agg.save_ratio_perf_to_res_tables(tables)
+    # tables = agg.build_ratio_perf_to_res_tables(data)
+    # agg.save_ratio_perf_to_res_tables(tables)
     
-
     # quick summary printed
-    n_tpgs = df["iset"].nunique() if not df.empty else 0
-    n_archs = df["uarch"].nunique() if not df.empty else 0
-    #for isa in df["isa"].unique():
-    #    print(isa)
+    n_tpgs = df[["iset", "dtype"]].drop_duplicates().shape[0]
+    print(df[["iset", "dtype"]].drop_duplicates())
+    n_archs = df["uarch"].nunique()
     print(f"SUMMARY: TPGs={n_tpgs}, architectures={n_archs}, total_rows={len(df)}")
 
 if __name__ == "__main__":
