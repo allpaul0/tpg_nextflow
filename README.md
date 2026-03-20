@@ -12,7 +12,8 @@ This project automates the generation, training, and code generation of Tangled 
 - **Code Generation:** Generates and patches C code for trained TPGs.
 - **Inference:** Realize inference on the Learning Environment.
 
-## Repository structure
+## Repository structure
+
 Configuration files are in [`configs/`](configs), pipeline scripts in [`pipeline/`](pipeline), and containers in [`containers/`](containers).
 
 ## Usage
