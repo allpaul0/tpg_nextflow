@@ -16,6 +16,18 @@ include { find_missing_inference_results_nf } from "./process/find_missing_infer
 
 workflow {
 
+    // add a line to check if ${project_root}/containers/x-heep.sif exists and print a warning if it does not, since the inference_simulator process requires it
+    def containerPath = "${params.projectRoot}/containers/x-heep.sif"
+
+    if (!file(containerPath).exists()) {
+         error """
+        ERROR: The required container ${containerPath} does not exist.
+
+        The inference_simulator process requires this container to run.
+        Please build it using the dedicated GitHub repo.
+        """
+    }
+
     if( !params.inference_resume ) {
 
         // Channel of prepared TPG folders
