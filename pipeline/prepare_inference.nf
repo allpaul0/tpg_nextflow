@@ -13,7 +13,6 @@ workflow {
     if (params.mini_config != 0) {
         ch_trained_TPGs = ch_trained_TPGs.take(params.mini_config)
     }
-    //
 
     generated_codes = generate_code(ch_trained_TPGs)
 
