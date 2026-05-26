@@ -19,5 +19,6 @@ workflow {
     exported_LE_states = export_LE_states(generated_codes)
     
     // unused for now, we build on X-HEEP using the RISCV compiler toolchain
+    // can be set to compile for x86 using the right compiler
     // built_executables = build_executables(ch_trained_TPGs)
 }
