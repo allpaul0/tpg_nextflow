@@ -9,10 +9,6 @@ set -euo pipefail
 tpg_folder="$1"
 project_root="$2"
 
-# runs sed in-place to update the JSON value for "tpgDotPathTraining" 
-# in the trainParams.json file to point to the out_best.dot file
-#sed -i 's/"tpgDotPathTraining": "outLogs"/"tpgDotPathTraining": ".\/outLogs\/out_best.dot"/' ./${tpg_folder}/params/trainParams.json
-
 # build 128MB Apptainer overlay 
 overlay_img="${tpg_folder}/overlay/overlay.img"
 if [ ! -f "$overlay_img" ]; then
@@ -21,7 +17,35 @@ if [ ! -f "$overlay_img" ]; then
 else
     echo "Overlay already exists: $overlay_img"
 fi
-# run the code generation inside the Singularity container
+
+# Get instrType
+INSTR_TYPE=$(jq -r '.instrType' "${tpg_folder}/params/trainParams.json")
+
+# Map instrType → compiler flags
+case "$INSTR_TYPE" in
+    double)
+        export CXXFLAGS="-DUSE_DOUBLE"
+        export CFLAGS="-DUSE_DOUBLE"
+        ;;
+    float)
+        export CXXFLAGS="-DUSE_FLOAT"
+        export CFLAGS="-DUSE_FLOAT"
+        ;;
+    int)
+        export CXXFLAGS="-DUSE_INT"
+        export CFLAGS="-DUSE_INT"
+        ;;
+    fixedpt)
+        export CXXFLAGS="-DUSE_FIXEDPT"
+        export CFLAGS="-DUSE_FIXEDPT"
+        ;;
+    *)
+        echo "Unknown instrType: $INSTR_TYPE"
+        exit 1
+        ;;
+esac
+
+# run the exportLEstates program in the Singularity container
 apptainer exec \
     --overlay "${tpg_folder}/overlay/overlay.img" \
     --bind ${tpg_folder}/params:/params/ \
@@ -34,19 +58,11 @@ apptainer exec \
         && cd /armlearn-wrapper \
         && rm -rf build \
         && mkdir build && cd build \
-        && cmake .. \
-        && make CodeGen \
+        && CXXFLAGS=\"$CXXFLAGS\" CFLAGS=\"$CFLAGS\" cmake .. \
+        && make exportLEstates \
         && cd ../.. \
-        && cp /params/TeamsInstrumented/codegenParams.json /params/codegenParams.json \
-        && ./armlearn-wrapper/build/CodeGen \
-        && mv /outLogs/codegen /outLogs/codegen_TeamsInstrumented \
-        && cp /params/default/codegenParams.json /params/codegenParams.json \
-        && ./armlearn-wrapper/build/CodeGen \
-        && rm /params/codegenParams.json \
+        && ./armlearn-wrapper/build/exportLEstates \
         && rm /params/AllTarget.csv /params/ValidationTrajectories.txt"
-
-# we don't need to patch anything since the codegen is now data type specific
-# no double -> dtype conversion
 
 rm "${tpg_folder}/overlay/overlay.img" 
 rmdir "${tpg_folder}/overlay"

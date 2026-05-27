@@ -6,26 +6,19 @@ process export_LE_states {
     publishDir "${params.outdir}/LE_states", mode: 'copy'
 
     input:
-    path expe_folder
+    path tpg_folder
 
     output:
-    path expe_folder
+    path tpg_folder
 
     // This script generates the Learning Environment initial states for inference.  
     // the number of graph traversal differs for each TPG, therefore its a per TPG process 
     script:
     """
-    echo "Exporting LE states for TPG model in ${expe_folder}"
+    tpg_folder=\$(realpath ${tpg_folder})
 
-    # run the exportLEstates in the Singularity container
-    apptainer exec \
-        --bind ${expe_folder}/params:/params/ \
-        --bind ${expe_folder}/outLogs:/outLogs/ \
-        ${params.projectRoot}/containers/gegelati-armlearn.sif \
-        /bin/bash -c "cd / \
-        && cp armlearn-wrapper/params/AllTarget.csv /params/. \
-        && cp armlearn-wrapper/params/ValidationTrajectories.txt /params/. \
-        && ./armlearn-wrapper/build/exportLEstates \
-        && rm /params/AllTarget.csv /params/ValidationTrajectories.txt"
+    echo "Exporting LE states for TPG model in ${tpg_folder}"
+    bash ${params.projectRoot}/pipeline/scripts/export_LE_states.sh \
+        \$tpg_folder ${params.projectRoot}
     """
 }
