@@ -14,3 +14,5 @@ make CodeGen &&
 cd .. &&
 ./build/CodeGen
 " 
+
+./launcher.sh --target=prepare_inference --mini_config=1 --slurm=false
