@@ -17,7 +17,7 @@ workflow {
     def ch_trained_TPGs = Channel.fromPath(params.trained_TPGs_path, type: 'dir').filter{ dir ->!dir.resolve("outLogs/codegen").exists()}
 
     if (params.mini_config != 0) {
-        ch_trained_TPGs = ch_trained_TPGs.take(params.mini_config)
+        ch_trained_TPGs = ch_trained_TPGs.take(params.mini_config.toInteger())
     }
 
     generated_codes = generate_code(ch_trained_TPGs)
