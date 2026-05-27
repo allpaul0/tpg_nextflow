@@ -6,32 +6,17 @@ process generate_code {
     publishDir "${params.outdir}/codegen_results", mode: 'copy'
 
     input:
-    path expe_folder
+    path tpg_folder
 
     output:
-    path expe_folder
+    path tpg_folder
 
     script:
     """
-    echo "Generating code for TPG model in ${expe_folder}"
+    tpg_folder=\$(realpath ${tpg_folder})
     
-    # runs sed in-place to update the JSON value for "tpgDotPathTraining" 
-    # in the trainParams.json file to point to the out_best.dot file
-    sed -i 's/"tpgDotPathTraining": "outLogs"/"tpgDotPathTraining": ".\\/outLogs\\/out_best.dot"/' \
-    ./${expe_folder}/params/trainParams.json
-    
-    # run the code generation inside the Singularity container
-    apptainer exec --bind ${expe_folder}/params:/params/ \
-    --bind ${expe_folder}/outLogs:/outLogs/ \
-    ${params.projectRoot}/containers/gegelati-armlearn.sif \
-    /bin/bash -c \
-        "cd / && \
-        cp armlearn-wrapper/params/AllTarget.csv /params/. \
-        && cp armlearn-wrapper/params/ValidationTrajectories.txt /params/. \
-        && ./armlearn-wrapper/build/CodeGen \
-        && rm /params/AllTarget.csv /params/ValidationTrajectories.txt"
-
-    # Patch generated code to use correct data types
-    bash ${projectDir}/scripts/patch_generated_code.sh "${expe_folder}"
+    echo "Generating code for TPG model in ${tpg_folder}"
+    bash ${params.projectRoot}/pipeline/scripts/generate_code.sh \
+        \$tpg_folder ${params.projectRoot}
     """
 }
