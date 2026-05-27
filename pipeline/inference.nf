@@ -38,11 +38,13 @@ workflow {
         def ch_prepared_TPGs = Channel.fromPath(params.prepared_TPGs_path, type: 'dir')
 
         // Generate JSON configs using Python
+        // JSON config is a mapping: TPG, uarch, isa, abi, dtype, compiler
         def ch_configs = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs)
 
         def takeFirstOnly = false  // or false
 
         // For each TPG, flatten JSON config files
+        // we pair TPG with their JSON config files 
         ch_TPG_JSONs = ch_configs
             .flatMap { tpg_folder ->
                 def config = file("${tpg_folder}/inference/configs")
