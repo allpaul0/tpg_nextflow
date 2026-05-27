@@ -1,13 +1,19 @@
 #!/usr/bin/env nextflow
+
+nextflow.enable.dsl=2
+
 include { generate_configs } from "./process/generate_configs.nf"
 include { train_tpg } from "./process/train_tpg.nf"
 include { parse_results } from "./process/parse_results.nf"
 
-nextflow.enable.dsl=2
-
 // This pipeline trains TPGs based on various configurations and parses the results
 
 workflow {
+    
+    if( !params.projectRoot ) {
+        error "projectRoot is not defined in the configuration nor given in the command line."
+    }
+
     def ch_data_types = Channel.from(params.data_types)
     def ch_seeds = Channel.from(0..<params.nb_seeds)
     def ch_instruction_sets = Channel.from(params.instruction_sets)

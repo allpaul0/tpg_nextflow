@@ -9,12 +9,16 @@ include { find_missing_inference_results_nf } from "./process/find_missing_infer
 // This pipeline realizes the inference phase by entering the x-heep container, generating a simulator 
 // and simulating the TPG with the required ISA on the Inference Benchmark.
 
-// For each TPG, 
-// for each intelligent ISA and microarchitecture combination,
-// run the inference benchmark on the simulator.
-// Inference latencies are collected, parsed and stored in a CSV file.
+// For each TPG: 
+//     For each ISA and microarchitecture combination: 
+//         Run the inference benchmark on the simulator.
+//         Inference latencies are collected, parsed and stored in a CSV file.
 
 workflow {
+
+    if( !params.projectRoot ) {
+        error "projectRoot is not defined in the configuration nor given in the command line."
+    }
 
     // add a line to check if ${project_root}/containers/x-heep.sif exists and print a warning if it does not, since the inference_simulator process requires it
     def containerPath = "${params.projectRoot}/containers/x-heep.sif"
