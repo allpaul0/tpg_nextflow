@@ -1,15 +1,15 @@
 process generate_code {
-    cpus = 1
-    memory = '1 GB'
-    time = '5m 30s'
-    
+    cpus 1
+    memory '1 GB'
+    time '5m 30s'
+
+    publishDir "${params.outdir}/codegen_results", mode: 'copy'
+
     input:
     path expe_folder
 
     output:
     path expe_folder
-
-    publishDir "${params.outdir}/codegen_results", mode: 'copy'
 
     script:
     """

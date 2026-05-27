@@ -1,8 +1,10 @@
 process build_executables {
-    container = 'gegelati-armlearn.sif'
-    cpus = 1
-    memory = '1 GB'
-    time = '4m 30s'
+    container 'gegelati-armlearn.sif'
+    cpus 1
+    memory '1 GB'
+    time '4m 30s'
+
+    publishDir "${params.outdir}/executables", mode: 'copy'
     
     input:
     path expe_folder
@@ -10,7 +12,6 @@ process build_executables {
     output:
     path expe_folder
 
-    publishDir "${params.outdir}/executables", mode: 'copy'
 
     script:
   

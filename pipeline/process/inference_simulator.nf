@@ -1,7 +1,7 @@
 process inference_simulator {
-    cpus = 1
-    memory = '512 MB' 
-    time = '2h'
+    cpus 1
+    memory '512 MB' 
+    time '2h'
 
     input:
     tuple path(tpg_folder), path(expe_json)

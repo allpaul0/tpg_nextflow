@@ -1,15 +1,15 @@
 process export_LE_states {
-    cpus = 1
-    memory = '1 GB'
-    time = '5m'
-        
+    cpus 1
+    memory '1 GB'
+    time '5m'
+
+    publishDir "${params.outdir}/LE_states", mode: 'copy'
+
     input:
     path expe_folder
 
     output:
     path expe_folder
-
-    publishDir "${params.outdir}/LE_states", mode: 'copy'
 
     // This script generates the Learning Environment initial states for inference.  
     // the number of graph traversal differs for each TPG, therefore its a per TPG process 

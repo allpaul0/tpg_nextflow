@@ -1,8 +1,8 @@
 process generate_TPG_ISA_UARCH_configs {
-  cpus = 1
-  memory = '1 GB'
-  time = '5min'
-  
+  cpus 1
+  memory '1 GB'
+  time '5min'
+
   input:
   path tpg_folder
 

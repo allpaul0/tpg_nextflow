@@ -1,15 +1,15 @@
 process train_tpg {
-    memory = params.memory
-    cpus = params.training_cores
-    time = "${params.training_time + 240} s" // Add 4 minutes for safety, as training is terminated between generations.
+    memory params.memory
+    cpus params.training_cores
+    time "${params.training_time + 240} s" // Add 4 minutes for safety, as training is terminated between generations.
+
+    publishDir "${params.outdir}/training_results", mode: 'copy'
 
     input:
     path expe_folder
 
     output:
     path expe_folder
-
-    publishDir "${params.outdir}/training_results", mode: 'copy'
 
     // The training is run inside the container, with the params and outLogs folders binded to the container.
     script:
