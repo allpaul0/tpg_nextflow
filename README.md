@@ -133,10 +133,10 @@ apptainer shell --bind x-heep:/opt/x-heep containers/x-heep.sif
 
 Do not use `apptainer run` to enter the `x-heep.sif` container, use `apptainer shell`, which allows to preserve defined environment variables from the def file
 
-### Development inference 
+### Development inference (local execution)
 
 ```bash
-./launcher.sh --target=inference --mini_config=1
+./launcher.sh --target=inference --mini_config=1 --slurm=false
 ```
 
 ### Delete every inference folder under tpg_expe/
