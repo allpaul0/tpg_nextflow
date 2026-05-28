@@ -82,7 +82,7 @@ workflow {
     }
 
     if (params.mini_config != 0) {
-        ch_TPG_JSONs = ch_TPG_JSONs.take(params.mini_config)
+        ch_TPG_JSONs = ch_TPG_JSONs.take(params.mini_config.toInteger())
     }
 
     // display the JSONs found
