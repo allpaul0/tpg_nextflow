@@ -16,4 +16,4 @@ cd .. &&
 ./launcher.sh --target=prepare_inference --mini_config=1 --slurm=false
 
 ## tester generation mapping: TPG -> UARCH
-python3 pipeline/scripts/generate_TPG_ISA_UARCH_configs.py --tpg_folder model_tpg_l2e2_zmmul_compbare_compExpAr/training_results/useInstrTrig-False_useInstrLogExp-False_useInstrLog2Exp2-True_useInstrZmmul-False_useInstrExpensiveArithmetic-True_useInstrComparison-True_seed-0_instrType-fixedpt/ --minimal True
+python3 pipeline/scripts/generate_TPG_ISA_UARCH_configs.py --tpg_folder model_tpg_l2e2_zmmul_compbare_compExpAr/training_results/useInstrTrig-False_useInstrLogExp-False_useInstrLog2Exp2-True_useInstrZmmul-True_useInstrExpensiveArithmetic-False_useInstrComparison-True_seed-0_instrType-fixedpt/ --minimal True

@@ -133,10 +133,10 @@ def generate(tpg_folder, minimal=False):
     dtype = infer_dtype(tpg_folder.name)
 
     # only one config for modelization v1
-    # "cv32e40x_im1": ("rv32im(c)_zicsr", "ilp32")
+    # "cv32e40x_im2": ("rv32im(c)_zicsr", "ilp32")
     configs = (UARCH_CONFIGS_RAW.items() 
         if not minimal 
-        else [("cv32e40x_im1", UARCH_CONFIGS_RAW["cv32e40x_im1"])])
+        else [("cv32e40x_im2", UARCH_CONFIGS_RAW["cv32e40x_im2"])])
    
     for uarch, (isa_raw, abi) in configs:
 
