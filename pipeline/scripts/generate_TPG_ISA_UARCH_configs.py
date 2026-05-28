@@ -119,7 +119,7 @@ def is_valid_combination(dtype, uarch_has_fpu):
 # --------------------------------------------------------------
 # Main generator
 # --------------------------------------------------------------
-def generate(tpg_folder):
+def generate(tpg_folder, minimal=False):
     tpg_folder = Path(tpg_folder)
     outdir = tpg_folder / "inference" / "configs"
     outdir.mkdir(exist_ok=True, parents=True)
@@ -132,13 +132,23 @@ def generate(tpg_folder):
 
     dtype = infer_dtype(tpg_folder.name)
 
-    for uarch, (isa_raw, abi) in UARCH_CONFIGS_RAW.items():
+    # only one config for modelization v1
+    # "cv32e40x_im1": ("rv32im(c)_zicsr", "ilp32")
+    configs = (UARCH_CONFIGS_RAW.items() 
+        if not minimal 
+        else [("cv32e40x_im1", UARCH_CONFIGS_RAW["cv32e40x_im1"])])
+   
+    for uarch, (isa_raw, abi) in configs:
 
         if not is_valid_combination(dtype, uarch):
             print(f"[SKIP] {tpg_folder.name} on {uarch} (dtype={dtype})")
             continue
 
         expanded_isas = expand_isa(isa_raw)
+        
+        # only the non-c version for modelization v1
+        expanded_isas = [expanded_isas[0]] if minimal else expanded_isas
+        print(expanded_isas)
 
         for isa in expanded_isas:
 
@@ -170,5 +180,7 @@ def generate(tpg_folder):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--tpg_folder", required=True)
+    parser.add_argument("--minimal", required=False, 
+        help="If set, only generate one ISA and one microarchitecture (for modelization v1)")
     args = parser.parse_args()
-    generate(args.tpg_folder)
+    generate(args.tpg_folder, args.minimal)
