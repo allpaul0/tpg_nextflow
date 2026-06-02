@@ -21,7 +21,7 @@ workflow {
     }
 
     // Only set clusterOptions if using a cluster executor
-    if (executor != 'local') {
+    if (params.executor != 'local') {
         clusterOptions = '--nodes=1 --cpus-per-task=1 --mem=512MB'
     }
 
