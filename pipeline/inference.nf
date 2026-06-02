@@ -20,7 +20,13 @@ workflow {
         error "projectRoot is not defined in the configuration nor given in the command line."
     }
 
-    // add a line to check if ${project_root}/containers/x-heep.sif exists and print a warning if it does not, since the inference_simulator process requires it
+    // Only set clusterOptions if using a cluster executor
+    if (executor != 'local') {
+        clusterOptions = '--nodes=1 --cpus-per-task=1 --mem=512MB'
+    }
+
+    // add a line to check if ${project_root}/containers/x-heep.sif exists and print a warning 
+    // if it does not, since the inference_simulator process requires it
     def containerPath = "${params.projectRoot}/containers/x-heep.sif"
 
     if (!file(containerPath).exists()) {
@@ -81,8 +87,10 @@ workflow {
             .filter { it != null }     // remove any nulls produced by blank lines
     }
 
-    if (params.mini_config != 0) {
-        ch_TPG_JSONs = ch_TPG_JSONs.take(params.mini_config.toInteger())
+    def mini = params.mini_config.toInteger()
+
+    if (mini > 0) {
+        ch_TPG_JSONs = ch_TPG_JSONs.take(mini)
     }
 
     // display the JSONs found
