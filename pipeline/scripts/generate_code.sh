@@ -19,7 +19,9 @@ if [ ! -f "$overlay_img" ]; then
     mkdir "${tpg_folder}/overlay"
     apptainer overlay create --size 128 "$overlay_img"
 else
-    echo "Overlay already exists: $overlay_img"
+    rm -rf "${tpg_folder}/overlay"
+    mkdir "${tpg_folder}/overlay"
+    apptainer overlay create --size 128 "$overlay_img"
 fi
 # run the code generation inside the Singularity container
 apptainer exec \
