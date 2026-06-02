@@ -72,7 +72,8 @@ UARCH_CONFIGS_RAW = {
     "cv32e40x_im0": ("rv32i(c)_zicsr", "ilp32"),
     "cv32e40x_im1": ("rv32im(c)_zicsr", "ilp32"),
     "cv32e40x_im2": ("rv32i(c)_zicsr_zmmul", "ilp32"),
-
+    "cv32e40x_im2_zba_zbb": ("rv32i(c)_zicsr_zmmul_zba_zbb", "ilp32"),
+    
     "cv32e40x_em0": ("rv32e(c)_zicsr", "ilp32e"),
     "cv32e40x_em1": ("rv32em(c)_zicsr", "ilp32e"),
     "cv32e40x_em2": ("rv32e(c)_zicsr_zmmul", "ilp32e"),
@@ -133,10 +134,10 @@ def generate(tpg_folder, minimal=False):
     dtype = infer_dtype(tpg_folder.name)
 
     # only one config for modelization v1
-    # "cv32e40x_im2": ("rv32im(c)_zicsr", "ilp32")
+    # "cv32e40x_im2_zba_zbb": ("rv32im(c)_zicsr", "ilp32")
     configs = (UARCH_CONFIGS_RAW.items() 
         if not minimal 
-        else [("cv32e40x_im2", UARCH_CONFIGS_RAW["cv32e40x_im2"])])
+        else [("cv32e40x_im2_zba_zbb", UARCH_CONFIGS_RAW["cv32e40x_im2_zba_zbb"])])
    
     for uarch, (isa_raw, abi) in configs:
 
