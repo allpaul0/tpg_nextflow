@@ -4,22 +4,20 @@
 mini_config=0
 slurm=false
 
-# Parse optional argument --mini_config=VALUE
-for arg in "$@"; do
-    case $arg in
+# parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
         --mini_config=*)
-            mini_config="${arg#*=}"
-            shift
+            mini_config="${1#*=}"
             ;;
         --target=*)
-            target="${arg#*=}"
-            shift
+            target="${1#*=}"
             ;;
         --slurm=*)
-            slurm="${arg#*=}"
-            shift
+            slurm="${1#*=}"
             ;;
     esac
+    shift
 done
 
 # =========================
@@ -72,7 +70,7 @@ log() {
 }
 
 # Trap SIGINT and terminate Nextflow gracefully
-trap 'log "Terminating Nextflow..."; kill $(pgrep -f "nextflow"); exit 0' SIGINT
+trap 'log "Terminating Nextflow..."; pids=$(pgrep -f nextflow); [ -n "$pids" ] && kill $pids; exit 0' SIGINT
 
 # launcher.sh - Script to launch the TPG pipeline
 
@@ -131,7 +129,7 @@ apptainer exec \
     "${apptainer_binds[@]}" \
     containers/nextflow-insa.sif \
     nextflow run "$target_file" \
-        --mini_config="$mini_config" \
+        --mini_config=${mini_config} \
         --projectRoot "$(pwd)" \
         -c ./configs/nextflow.config \
         -c "$selected_config" \
