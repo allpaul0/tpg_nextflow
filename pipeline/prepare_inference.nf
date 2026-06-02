@@ -14,10 +14,20 @@ workflow {
         error "projectRoot is not defined in the configuration nor given in the command line."
     }
 
+    def mini = params.mini_config.toInteger()
+
     def ch_trained_TPGs = Channel.fromPath(params.trained_TPGs_path, type: 'dir').filter{ dir ->!dir.resolve("outLogs/codegen").exists()}
 
-    if (params.mini_config != 0) {
-        ch_trained_TPGs = ch_trained_TPGs.take(params.mini_config.toInteger())
+    if (mini > 0) 
+    {
+        // echo hello
+        println "hello"
+        ch_trained_TPGs = ch_trained_TPGs.take(mini)
+    }
+
+    // safety check to ensure we have some training directories to work with after filtering and taking the mini_config
+    ch_trained_TPGs.ifEmpty {
+        error "No training directories found after filtering/take(). Check mini_config and paths."
     }
 
     generated_codes = generate_code(ch_trained_TPGs)
