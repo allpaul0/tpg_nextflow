@@ -1,0 +1,41 @@
+{
+    "simulator": "cv32e40x_im2_zba_zbb",
+    "isa": "rv32i_zicsr_zmmul_zba_zbb",
+    "abi": "ilp32",
+    "dtype": "fixedpt",
+    "instrTPG": {
+        "Classes": [
+            {
+                "Class": 0,
+                "Count": 10,
+                "AvgCyclesPerClass": 188,
+                "StddevCyclesPerClass": 1,
+                "CoefficientVariation": 0.5319
+            }
+        ],
+        "tpg_mean_lat": 188,
+        "tpg_stddev_lat": 0
+    },
+    "instrTeams_instrTPG": {
+        "Classes": [
+            {
+                "Class": 0,
+                "Count": 10,
+                "AvgCyclesPerClass": 206,
+                "StddevCyclesPerClass": 1,
+                "CoefficientVariation": 0.4854
+            }
+        ],
+        "tpg_mean_lat": 206,
+        "tpg_stddev_lat": 0,
+        "Teams": [
+            {
+                "Team": 12,
+                "Count": 10,
+                "AvgCyclesPerTeam": 60,
+                "StddevCyclesPerTeam": 0,
+                "CoefficientVariation": 0.0
+            }
+        ]
+    }
+}
