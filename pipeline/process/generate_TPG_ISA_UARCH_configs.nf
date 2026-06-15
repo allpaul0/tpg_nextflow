@@ -11,6 +11,6 @@ process generate_TPG_ISA_UARCH_configs {
 
   script:
   """
-  python3 ${params.projectRoot}/pipeline/scripts/generate_TPG_ISA_UARCH_configs.py --tpg_folder ${tpg_folder}
+  python3 ${params.projectRoot}/pipeline/scripts/generate_TPG_ISA_UARCH_configs.py --tpg_folder ${tpg_folder} --minimal True
   """
 }
