@@ -16,6 +16,10 @@ dtype_upper=$(echo "$dtype" | tr '[:lower:]' '[:upper:]')
 dtype_lower=$(echo "$dtype" | tr '[:upper:]' '[:lower:]')
 compiler=$(jq -r '.compiler' ${expe_json})
 
+# hardcoded applications names
+app_default="tpg_inference_instrTPG"
+app_instr="tpg_inference_instrTeams_instrTPG"
+ 
 # paths
 params_dir="${tpg_folder}/params"
 outlogs_dir="${tpg_folder}/outLogs"
@@ -34,10 +38,11 @@ echo "inference_dir=${inference_dir}"
 echo "simulators_dir=${simulators_dir}"
 echo "project_root=${project_root}"
 
-# build 512MB Apptainer overlay 
+# build 128MB Apptainer overlay 
 apptainer overlay create --size 512 "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype_lower}.img" 
-
+realpath "${project_root}/containers/x-heep.sif"
 # run Apptainer
+# Run non-instrumented TPG inference, then instrumented TPG inference
 apptainer exec \
     --overlay "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype_lower}.img" \
     --bind $params_dir:/params/ \
@@ -47,15 +52,32 @@ apptainer exec \
     ${project_root}/containers/x-heep.sif \
     /bin/bash -c "\
     export XDG_CACHE_HOME=/inference/cache && mkdir -p /inference/cache && \
-    cp /outLogs/codegen/TPG* /x-heep/sw/applications/tpg_inference/codegen/. && \
-    cp /outLogs/precalcul/LE_states.h /x-heep/sw/applications/tpg_inference/precalcul/. && \
+
+    cp /outLogs/codegen/TPG* /x-heep/sw/applications/tpg_modelization/${app_default}/codegen/. && \
+    cp /outLogs/precalcul/LE_states.h /x-heep/sw/applications/tpg_modelization/${app_default}/precalcul/. && \
+
+    cp /outLogs/codegen_TeamsInstrumented/TPG* /x-heep/sw/applications/tpg_modelization/${app_instr}/codegen/. && \
+    cp /outLogs/precalcul/LE_states.h /x-heep/sw/applications/tpg_modelization/${app_instr}/precalcul/. && \
+
     cd /x-heep && \
 
     mkdir -p experimentations/simulations && \
     ls experimentations/simulations/ && \
 
     ./scripts/generate-mcu/generate-mcu.sh ${uarch} && \
-    ./scripts/automatic-simulation/simulation.sh tpg_inference ${uarch} ${isa} ${abi} ${dtype_upper} ${compiler} && \
+
+    ./scripts/automatic-simulation/simulation.sh tpg_modelization/${app_default} ${uarch} ${isa} ${abi} ${dtype_upper} ${compiler} False && \
+    
+    ./scripts/automatic-simulation/simulation.sh tpg_modelization/${app_instr} ${uarch} ${isa} ${abi} ${dtype_upper} ${compiler} True && \
+
+    ./scripts/compile_disassemble/compile_disassemble.sh tpg_modelization/${app_default} ${uarch} ${isa} ${abi} ${dtype_upper} ${compiler} && \
+
+    ./scripts/compile_disassemble/compile_disassemble.sh tpg_modelization/${app_instr} ${uarch} ${isa} ${abi} ${dtype_upper} ${compiler} && \
+
+    mv experimentations/compilations/disassembly_${app_default}.txt /inference/results/. && \
+
+    mv experimentations/compilations/disassembly_${app_instr}.txt /inference/results/. && \
+
     mv experimentations/simulations/${uarch}_${isa}_${abi}_${dtype_lower}.json /inference/results/."
 
 rm "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype_lower}.img"
