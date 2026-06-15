@@ -15,16 +15,19 @@ workflow {
     }
 
     def ch_data_types = Channel.from(params.data_types)
-    def ch_seeds = Channel.from(0..<params.nb_seeds)
+    def nb_seeds = params.nb_seeds.toInteger()
+    def ch_seeds = Channel.from(10..<(10 + nb_seeds))
     def ch_instruction_sets = Channel.from(params.instruction_sets)
     def ch_hyperparams = Channel.value(file("./pipeline/parameters/local_params.json"))
     use_local_params = false
 
-    if (params.mini_config != 0) {
+    def mini = params.mini_config.toInteger()
+
+    if (mini != 0) {
         println "Using mini configuration for testing purposes..."
-        ch_data_types = ch_data_types.take(params.mini_config)
-        ch_seeds = ch_seeds.take(params.mini_config)
-        ch_instruction_sets = ch_instruction_sets.take(params.mini_config)
+        ch_data_types = ch_data_types.take(mini)
+        ch_seeds = ch_seeds.take(mini)
+        ch_instruction_sets = ch_instruction_sets.take(mini)
         use_local_params = true
     }
 

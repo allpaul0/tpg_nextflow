@@ -1,10 +1,14 @@
 #!/bin/bash
 
-# Default value
+# =========================
+# Defaults
+# =========================
 mini_config=0
 slurm=false
 
-# parse command line arguments
+# =========================
+# Parse command line arguments
+# =========================
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --mini_config=*)
@@ -16,12 +20,19 @@ while [[ $# -gt 0 ]]; do
         --slurm=*)
             slurm="${1#*=}"
             ;;
+        --slurm)
+            slurm=true
+            ;;
+        *)
+            # Pass unknown args through to Nextflow
+            extra_args+=("$1")
+            ;;
     esac
     shift
 done
 
 # =========================
-# Validate slurm flag
+# Validate flags
 # =========================
 case "$slurm" in
     true|false) ;;
@@ -31,21 +42,38 @@ case "$slurm" in
         ;;
 esac
 
-# If no target provided, prompt the user (fail in non-interactive shells)
+# =========================
+# Build Nextflow profile list
+# executor profile: local (default) or slurm
+# =========================
+if [ "$slurm" = "true" ]; then
+    profile="slurm"
+else
+    profile="local"
+fi
+
+# mini profile stacks on top when mini_config is active
+if [ "$mini_config" -gt 0 ] 2>/dev/null; then
+    profile="${profile},mini"
+fi
+
+# =========================
+# Resolve target pipeline
+# =========================
 if [ -z "$target" ]; then
     if [ -t 0 ]; then
         echo "Select target pipeline:"
         echo "  1) train"
         echo "  2) prepare_inference"
         echo "  3) inference"
-        read -p "Enter choice (train/prepare_inference/inference): " target
+        read -rp "Enter choice (train/prepare_inference/inference): " target
     else
-        echo "Error: --target must be provided in non-interactive mode. Allowed: train, prepare_inference, inference"
+        echo "Error: --target must be provided in non-interactive mode."
+        echo "       Allowed: train, prepare_inference, inference"
         exit 1
     fi
 fi
 
-# Map target to pipeline file
 case "$target" in
     train|train.nf)
         target_file="./pipeline/train.nf"
@@ -60,34 +88,39 @@ case "$target" in
         selected_config="./configs/inference.config"
         ;;
     *)
-        echo "Invalid target: $target. Allowed values: train, prepare_inference, inference"
+        echo "Error: Invalid target '$target'."
+        echo "       Allowed: train, prepare_inference, inference"
         exit 1
         ;;
 esac
 
+# =========================
+# Logging helper
+# =========================
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
 
-# Trap SIGINT and terminate Nextflow gracefully
-trap 'log "Terminating Nextflow..."; pids=$(pgrep -f nextflow); [ -n "$pids" ] && kill $pids; exit 0' SIGINT
+# =========================
+# Graceful SIGINT handling
+# =========================
+trap 'log "Terminating Nextflow..."; pids=$(pgrep -f nextflow); [ -n "$pids" ] && kill "$pids"; exit 0' SIGINT
 
-# launcher.sh - Script to launch the TPG pipeline
+# Set working directory to the script's location
+cd "$(dirname "$0")" || exit 1
 
-# Set the working directory to the script's location
-cd "$(dirname "$0")"
+# =========================
+# Build containers
+# =========================
+log "Checking containers..."
 
-log "Build containers"
-
-# Find all container definition files
 container_defs=()
 for def_file in containers/*.def; do
     [ -e "$def_file" ] || continue
     container_defs+=("$(basename "$def_file" .def)")
 done
-log "Found containers: ${container_defs[*]}"
+log "Found container definitions: ${container_defs[*]}"
 
-# Build containers if they don't exist or are outdated
 for container in "${container_defs[@]}"; do
     sif_file="containers/${container}.sif"
     def_file="containers/${container}.def"
@@ -95,44 +128,44 @@ for container in "${container_defs[@]}"; do
         log "Building container: $container"
         apptainer build --force "$sif_file" "$def_file"
     else
-        log "Container is up-to-date: $container"
+        log "Container up-to-date: $container"
     fi
 done
 
 # =========================
 # Apptainer bind options
+# (SLURM requires munge/slurm sockets; local needs nothing extra)
 # =========================
 apptainer_binds=()
-
 if [ "$slurm" = "true" ]; then
-    log "Running in SLURM mode"
     apptainer_binds+=(
         "--bind" "/etc/munge:/etc/munge"
         "--bind" "/run/munge:/run/munge"
         "--bind" "/etc/slurm:/etc/slurm"
     )
-
-else
-    log "Running in LOCAL mode"
 fi
 
 # =========================
-# Run Nextflow
+# Summary
 # =========================
-log "Using mini_config=$mini_config"
-log "Target=$target_file"
-log "Config=$selected_config"
-log "Apptainer will bind: ${apptainer_binds[*]}"
+log "Target   : $target_file"
+log "Config   : $selected_config"
+log "Profile  : $profile"
+log "mini_config: $mini_config"
+[ ${#extra_args[@]} -gt 0 ] && log "Extra NF args: ${extra_args[*]}"
 
-
+# =========================
+# Launch
+# =========================
 apptainer exec \
     "${apptainer_binds[@]}" \
     containers/nextflow-insa.sif \
     nextflow run "$target_file" \
-        --mini_config=${mini_config} \
+        --mini_config="${mini_config}" \
         --projectRoot "$(pwd)" \
         -c ./configs/nextflow.config \
         -c "$selected_config" \
+        -profile "$profile" \
         -with-report \
         -with-dag \
-        "$@"
+        "${extra_args[@]}"
