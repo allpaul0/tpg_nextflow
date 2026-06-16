@@ -14,7 +14,9 @@ process generate_configs {
     // This script generates configuration files for TPG training based on isntruction_set and data_types. 
     script:
     """
-    echo "Generate_configs.nf: Generating configuration with configs: ${config}, hyperparameters: ${hyperparameters}, use_local_params: ${use_local_params}"
+    echo "Generate_configs.nf: Generating configuration with configs: ${config}, \
+        hyperparameters: ${hyperparameters}, \
+        use_local_params: ${use_local_params}"
     python3 ${projectDir}/scripts/generate_configs.py \
         '${groovy.json.JsonOutput.toJson(config)}' \
         ${params.training_time} \
