@@ -39,10 +39,10 @@ apptainer exec \
         && cmake .. \
         && make CodeGen \
         && cd ../.. \
-        && cp /params/TeamsInstrumented/codegenParams.json /params/codegenParams.json \
+        && cp /armlearn-wrapper/params/TeamsInstrumented/codegenParams.json /params/codegenParams.json \
         && ./armlearn-wrapper/build/CodeGen \
         && mv /outLogs/codegen /outLogs/codegen_TeamsInstrumented \
-        && cp /params/default/codegenParams.json /params/codegenParams.json \
+        && cp /armlearn-wrapper/params/default/codegenParams.json /params/codegenParams.json \
         && ./armlearn-wrapper/build/CodeGen \
         && rm /params/codegenParams.json \
         && rm /params/AllTarget.csv /params/ValidationTrajectories.txt"
