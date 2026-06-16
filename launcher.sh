@@ -139,9 +139,11 @@ done
 apptainer_binds=()
 if [ "$slurm" = "true" ]; then
     apptainer_binds+=(
-        "--bind" "/etc/munge:/etc/munge"
         "--bind" "/run/munge:/run/munge"
         "--bind" "/etc/slurm:/etc/slurm"
+        "--bind" "/usr/bin/sbatch:/usr/bin/sbatch"
+        "--bind" "/usr/bin/squeue:/usr/bin/squeue"
+        "--bind" "/usr/bin/scancel:/usr/bin/scancel"
     )
 fi
 

@@ -1,9 +1,9 @@
 process train_tpg {
     memory params.memory
     cpus params.training_cores
-    time "${params.training_time + 240} s" // Add 4 minutes for safety, as training is terminated between generations.
-
+    time "${params.training_time + 240} s"
     publishDir "${params.outdir}/training_results", mode: 'copy'
+    container null  // ← disables Nextflow container wrapping; script calls apptainer directly
 
     input:
     path expe_folder
@@ -11,7 +11,6 @@ process train_tpg {
     output:
     path expe_folder
 
-    // The training is run inside the container, with the params and outLogs folders binded to the container.
     script:
     """
     echo "Training TPG model with ${expe_folder}"
