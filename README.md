@@ -170,3 +170,25 @@ main.c not found
 
 tpg_float_double, tpg_fixedpt_comp_logexp_trigo_complete, tpg_l2e2_zmmul_compbare_compExpAr
 ```
+
+## Launch training no cluster using screen to avoiding getting SIGHUP
+
+1. Create screen session
+```bash
+screen -S session_name
+```
+
+2. Get out of screen session
+```bash
+[Ctrl] + [a] then [d]
+```
+
+3. Join active screen session 
+```bash
+screen -r session_name
+```
+
+4. Kill screen session (from within) 
+```bash
+exit
+```
