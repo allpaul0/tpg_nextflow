@@ -1,7 +1,7 @@
 process generate_configs {
     cpus 1
     memory '1 GB'
-    time '5m'
+    time '10m'
     
     input:
     val config

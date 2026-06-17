@@ -1,7 +1,7 @@
 process parse_results {
     cpus 1
     memory '1 GB'
-    time '1m 30s'
+    time '10m'
     container "${params.projectRoot}/containers/nextflow-insa.sif"
 
     publishDir "${params.outdir}/accuracy_results", mode: 'copy'
