@@ -20,7 +20,7 @@ From: ubuntu:24.04
         && apt-get clean
 
     # Install Python packages with pip
-    python3 -m pip install --no-cache-dir matplotlib pandas 
+    python3 -m pip install --no-cache-dir matplotlib pandas --break-system-packages
 
     cd /tmp
     wget https://github.com/apptainer/apptainer/releases/download/v1.4.3/apptainer_1.4.3_amd64.deb
