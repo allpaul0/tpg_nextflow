@@ -5,12 +5,13 @@ process generate_TPG_ISA_UARCH_configs {
 
   input:
   path tpg_folder
+  val uarch_config
 
   output:
   path tpg_folder
 
   script:
   """
-  python3 ${params.projectRoot}/pipeline/scripts/generate_TPG_ISA_UARCH_configs.py --tpg_folder ${tpg_folder} --minimal True
+  python3 ${params.projectRoot}/pipeline/scripts/generate_TPG_ISA_UARCH_configs.py --tpg_folder ${tpg_folder} --uarch_config ${uarch_config}
   """
 }

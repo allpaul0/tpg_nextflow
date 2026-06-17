@@ -71,6 +71,7 @@ UARCH_CONFIGS_RAW = {
 
     "cv32e40x_im0": ("rv32i(c)_zicsr", "ilp32"),
     "cv32e40x_im1": ("rv32im(c)_zicsr", "ilp32"),
+    "cv32e40x_im1_zba_zbb": ("rv32im(c)_zicsr_zba_zbb", "ilp32"),
     "cv32e40x_im2": ("rv32i(c)_zicsr_zmmul", "ilp32"),
     "cv32e40x_im2_zba_zbb": ("rv32i(c)_zicsr_zmmul_zba_zbb", "ilp32"),
     
@@ -120,7 +121,7 @@ def is_valid_combination(dtype, uarch_has_fpu):
 # --------------------------------------------------------------
 # Main generator
 # --------------------------------------------------------------
-def generate(tpg_folder, minimal=False):
+def generate(tpg_folder, uarch_config):
     tpg_folder = Path(tpg_folder)
     outdir = tpg_folder / "inference" / "configs"
     outdir.mkdir(exist_ok=True, parents=True)
@@ -135,9 +136,13 @@ def generate(tpg_folder, minimal=False):
 
     # only one config for modelization v1
     # "cv32e40x_im2_zba_zbb": ("rv32im(c)_zicsr", "ilp32")
-    configs = (UARCH_CONFIGS_RAW.items() 
-        if not minimal 
-        else [("cv32e40x_im2_zba_zbb", UARCH_CONFIGS_RAW["cv32e40x_im2_zba_zbb"])])
+    if not uarch_config:  # None or empty string → generate all
+        configs = list(UARCH_CONFIGS_RAW.items())
+    elif uarch_config in UARCH_CONFIGS_RAW:
+        configs = [(uarch_config, UARCH_CONFIGS_RAW[uarch_config])]
+    else:
+        raise ValueError(f"Unknown uarch_config: '{uarch_config}'. Valid options: {list(UARCH_CONFIGS_RAW.keys())}")
+
    
     for uarch, (isa_raw, abi) in configs:
 
@@ -148,7 +153,7 @@ def generate(tpg_folder, minimal=False):
         expanded_isas = expand_isa(isa_raw)
         
         # only the non-c version for modelization v1
-        expanded_isas = [expanded_isas[0]] if minimal else expanded_isas
+        expanded_isas = [expanded_isas[0]] if len(uarch_config) != 0 else expanded_isas
         print(expanded_isas)
 
         for isa in expanded_isas:
@@ -181,7 +186,7 @@ def generate(tpg_folder, minimal=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--tpg_folder", required=True)
-    parser.add_argument("--minimal", required=False, 
-        help="If set, only generate one ISA and one microarchitecture (for modelization v1)")
+    parser.add_argument("--uarch_config", required=False, 
+        help="generates ISA for the required microarchitecture")
     args = parser.parse_args()
-    generate(args.tpg_folder, args.minimal)
+    generate(args.tpg_folder, args.uarch_config)
