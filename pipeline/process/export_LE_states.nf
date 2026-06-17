@@ -1,7 +1,7 @@
 process export_LE_states {
     cpus 1
     memory '1 GB'
-    time '5m'
+    time '1h'
 
     publishDir "${params.outdir}/LE_states", mode: 'copy'
 
