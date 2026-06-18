@@ -37,7 +37,7 @@ def experiment_name(config):
     # Generates a unique experiment folder name based on parameter key-value pairs.
     return '_'.join(f"{key}-{value}" for key, value in config.items() if key != 'instrSetName')
 
-def modify_json(expe_folder, config, training_time, training_cores):
+def modify_json(expe_folder, config, training_time, nb_generations, training_cores):
     # Updates JSON config files with experiment config.
     # The training_time and training_cores values are provided by Nextflow config (see trainings.config).
     pattern = r'//.*?\n|/\*.*?\*/'
@@ -66,6 +66,7 @@ def modify_json(expe_folder, config, training_time, training_cores):
         params_content = json_file.read()
         params_uncommented = re.sub(pattern, '', params_content, flags=re.DOTALL | re.MULTILINE)
         params_data = json.loads(params_uncommented)
+        params_data['nbGenerations'] = int(nb_generations)
         params_data['nbThreads'] = int(training_cores)  # From Nextflow config
         with open(params_json_path, 'w') as json_file:
             json.dump(params_data, json_file, indent=4)
@@ -86,7 +87,7 @@ def main():
     expe_folder = expe_name
     print(f"Generate_configs.py: Generating configuration for experiment: {expe_name}")
     copy_files(expe_folder, custom_params_path, use_local_params)
-    modify_json(expe_folder, config, training_time, training_cores)
+    modify_json(expe_folder, config, training_time, nb_generations, training_cores)
 
 if __name__ == "__main__":
     main()
