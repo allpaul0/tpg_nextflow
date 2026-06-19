@@ -94,9 +94,9 @@ workflow {
     }
 
     // display the JSONs found
-    ch_TPG_JSONs.view { t -> "Found TPG JSON config: ${t[1]} in folder ${t[0]}" }
+    //ch_TPG_JSONs.view { t -> "Found TPG JSON config: ${t[1]} in folder ${t[0]}" }
     // count the number of JSON configs to process
-    ch_TPG_JSONs.count().view { c -> "Total number of TPG JSON configs to process: ${c}" }
+    //ch_TPG_JSONs.count().view { c -> "Total number of TPG JSON configs to process: ${c}" }
 
     // Run inference simulator for each JSON config
     inference_simulator(ch_TPG_JSONs)

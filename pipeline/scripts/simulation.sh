@@ -41,6 +41,7 @@ echo "project_root=${project_root}"
 # build 128MB Apptainer overlay 
 apptainer overlay create --size 512 "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype_lower}.img" 
 realpath "${project_root}/containers/x-heep.sif"
+
 # run Apptainer
 # Run non-instrumented TPG inference, then instrumented TPG inference
 apptainer exec \
@@ -74,10 +75,12 @@ apptainer exec \
 
     ./scripts/compile_disassemble/compile_disassemble.sh tpg_modelization/${app_instr} ${uarch} ${isa} ${abi} ${dtype_upper} ${compiler} && \
 
-    mv experimentations/compilations/disassembly_${app_default}.txt /inference/results/. && \
+    mkdir -p /inference/results/${uarch}_${isa}_${abi}_${dtype_lower} && \
 
-    mv experimentations/compilations/disassembly_${app_instr}.txt /inference/results/. && \
+    mv experimentations/compilations/disassembly_${app_default}.txt /inference/results/${uarch}_${isa}_${abi}_${dtype_lower}/. && \
 
-    mv experimentations/simulations/${uarch}_${isa}_${abi}_${dtype_lower}.json /inference/results/."
+    mv experimentations/compilations/disassembly_${app_instr}.txt /inference/results/${uarch}_${isa}_${abi}_${dtype_lower}/. && \
+
+    mv experimentations/simulations/${uarch}_${isa}_${abi}_${dtype_lower}.json /inference/results/${uarch}_${isa}_${abi}_${dtype_lower}/latencies.json"
 
 rm "${inference_dir}/overlays/overlay_${uarch}_${isa}_${abi}_${dtype_lower}.img"
