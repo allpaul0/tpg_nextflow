@@ -1,0 +1,174 @@
+{
+    "simulator": "cv32e40x_im1_zba_zbb",
+    "isa": "rv32im_zicsr_zba_zbb",
+    "abi": "ilp32",
+    "dtype": "fixedpt",
+    "instrTPG": {
+        "Classes": [
+            {
+                "Class": 0,
+                "Count": 10,
+                "AvgCyclesPerClass": 312,
+                "StddevCyclesPerClass": 0,
+                "CoefficientVariation": 0.0
+            },
+            {
+                "Class": 1,
+                "Count": 10,
+                "AvgCyclesPerClass": 389,
+                "StddevCyclesPerClass": 2,
+                "CoefficientVariation": 0.5141
+            },
+            {
+                "Class": 2,
+                "Count": 10,
+                "AvgCyclesPerClass": 777,
+                "StddevCyclesPerClass": 4,
+                "CoefficientVariation": 0.5148
+            },
+            {
+                "Class": 3,
+                "Count": 10,
+                "AvgCyclesPerClass": 781,
+                "StddevCyclesPerClass": 8,
+                "CoefficientVariation": 1.0243
+            },
+            {
+                "Class": 4,
+                "Count": 10,
+                "AvgCyclesPerClass": 841,
+                "StddevCyclesPerClass": 4,
+                "CoefficientVariation": 0.4756
+            },
+            {
+                "Class": 5,
+                "Count": 10,
+                "AvgCyclesPerClass": 1035,
+                "StddevCyclesPerClass": 2,
+                "CoefficientVariation": 0.1932
+            },
+            {
+                "Class": 6,
+                "Count": 10,
+                "AvgCyclesPerClass": 1046,
+                "StddevCyclesPerClass": 4,
+                "CoefficientVariation": 0.3824
+            },
+            {
+                "Class": 7,
+                "Count": 10,
+                "AvgCyclesPerClass": 849,
+                "StddevCyclesPerClass": 3,
+                "CoefficientVariation": 0.3534
+            }
+        ],
+        "tpg_mean_lat": 753,
+        "tpg_stddev_lat": 252
+    },
+    "instrTeams_instrTPG": {
+        "Classes": [
+            {
+                "Class": 0,
+                "Count": 10,
+                "AvgCyclesPerClass": 328,
+                "StddevCyclesPerClass": 0,
+                "CoefficientVariation": 0.0
+            },
+            {
+                "Class": 1,
+                "Count": 10,
+                "AvgCyclesPerClass": 427,
+                "StddevCyclesPerClass": 2,
+                "CoefficientVariation": 0.4684
+            },
+            {
+                "Class": 2,
+                "Count": 10,
+                "AvgCyclesPerClass": 849,
+                "StddevCyclesPerClass": 4,
+                "CoefficientVariation": 0.4711
+            },
+            {
+                "Class": 3,
+                "Count": 10,
+                "AvgCyclesPerClass": 852,
+                "StddevCyclesPerClass": 7,
+                "CoefficientVariation": 0.8216
+            },
+            {
+                "Class": 4,
+                "Count": 10,
+                "AvgCyclesPerClass": 903,
+                "StddevCyclesPerClass": 4,
+                "CoefficientVariation": 0.443
+            },
+            {
+                "Class": 5,
+                "Count": 10,
+                "AvgCyclesPerClass": 1116,
+                "StddevCyclesPerClass": 2,
+                "CoefficientVariation": 0.1792
+            },
+            {
+                "Class": 6,
+                "Count": 10,
+                "AvgCyclesPerClass": 1124,
+                "StddevCyclesPerClass": 4,
+                "CoefficientVariation": 0.3559
+            },
+            {
+                "Class": 7,
+                "Count": 10,
+                "AvgCyclesPerClass": 909,
+                "StddevCyclesPerClass": 3,
+                "CoefficientVariation": 0.33
+            }
+        ],
+        "tpg_mean_lat": 813,
+        "tpg_stddev_lat": 272,
+        "Teams": [
+            {
+                "Team": 2,
+                "Count": 30,
+                "AvgCyclesPerTeam": 175,
+                "StddevCyclesPerTeam": 1,
+                "CoefficientVariation": 0.5714
+            },
+            {
+                "Team": 3,
+                "Count": 30,
+                "AvgCyclesPerTeam": 176,
+                "StddevCyclesPerTeam": 2,
+                "CoefficientVariation": 1.1364
+            },
+            {
+                "Team": 4,
+                "Count": 40,
+                "AvgCyclesPerTeam": 180,
+                "StddevCyclesPerTeam": 2,
+                "CoefficientVariation": 1.1111
+            },
+            {
+                "Team": 6,
+                "Count": 40,
+                "AvgCyclesPerTeam": 204,
+                "StddevCyclesPerTeam": 1,
+                "CoefficientVariation": 0.4902
+            },
+            {
+                "Team": 8,
+                "Count": 70,
+                "AvgCyclesPerTeam": 54,
+                "StddevCyclesPerTeam": 0,
+                "CoefficientVariation": 0.0
+            },
+            {
+                "Team": 12,
+                "Count": 80,
+                "AvgCyclesPerTeam": 202,
+                "StddevCyclesPerTeam": 2,
+                "CoefficientVariation": 0.9901
+            }
+        ]
+    }
+}
