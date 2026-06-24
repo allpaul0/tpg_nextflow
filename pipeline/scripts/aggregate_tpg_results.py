@@ -3145,6 +3145,204 @@ class TPGResultsAggregator:
             bbox_inches="tight"
         )
 
+    def plot_pareto_front_ress_lat_projection_all_points(self, data):
+
+        from statistics import mean
+        from itertools import cycle
+        from collections import defaultdict
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from matplotlib.lines import Line2D
+        import random
+
+        # ---------------------------------------------------------------
+        # Custom legend orders
+        # ---------------------------------------------------------------
+        iset_custom_order = [
+            "{*,/,>,-,+}",
+            "{log,exp,*,/,>,-,+}",
+            "{trig,*,/,>,-,+}",
+            "{trig,log,exp,*,/,>,-,+}",
+            "{log2,exp2,>,-,+}",
+            "{log2,exp2,*,>,-,+}",
+            "{log2,exp2,*,/,>,-,+}",
+        ]
+        iset_order_index = {s: i for i, s in enumerate(iset_custom_order)}
+
+        uarch_custom_order = [
+            "s2_em0d0", "s2_em1d1", "s2_em2d1", "s2_em3d1",
+            "s2_im0d0", "s2_im1d1", "s2_im2d1", "s2_im3d1",
+            "s4_em0d0", "s4_em4d0", "s4_em4d2",
+            "s4_im0d0", "s4_im4d0", "s4_im4d2",
+            "s4_im5d2", "s4_im5d2_pulp",
+            "s4_im5d2_fpu", "s4_im5d2_pulp_fpu",
+        ]
+        uarch_order_index = {s: i for i, s in enumerate(uarch_custom_order)}
+
+        dtype_map = {
+            "float": "fp32",
+            "double": "fp64",
+            "fixedpt": "fixed"
+        }
+
+        # ---------------------------------------------------------------
+        # Pre-filter ISA
+        # ---------------------------------------------------------------
+        data = self.select_best_isa_for_all_uarchs(data)
+
+        # ---------------------------------------------------------------
+        # Collect data
+        # ---------------------------------------------------------------
+        dists, latencies, ressources = [], [], []
+        points_meta = []
+
+        for tpg, uarch_map in sorted(data.items()):
+            for uarch, isa_map in sorted(uarch_map.items()):
+                for isa, archgroup in sorted(isa_map.items()):
+
+                    if (
+                        archgroup.accuracy is not None
+                        and archgroup.norm_ressource is not None
+                        and archgroup.seeds
+                    ):
+                        dists.append(archgroup.accuracy)
+                        latencies.append(mean(s.mean for s in archgroup.seeds))
+                        ressources.append(archgroup.norm_ressource)
+
+                        points_meta.append({
+                            "uarch": uarch,
+                            "iset": archgroup.iset,
+                            "dtype": dtype_map.get(archgroup.dtype, archgroup.dtype),
+                            "accuracy": archgroup.accuracy
+                        })
+
+        Xd = np.array(dists)
+        Yl = np.array(latencies)
+        Zr = np.array(ressources)
+
+        # ---------------------------------------------------------------
+        # 3D Pareto
+        # ---------------------------------------------------------------
+        pareto_3d = self.is_pareto_efficient(
+            np.column_stack((Xd, Yl, Zr))
+        )
+
+        # ---------------------------------------------------------------
+        # Domains (ALL points, not Pareto)
+        # ---------------------------------------------------------------
+        all_uarches = sorted(
+            {m["uarch"] for m in points_meta},
+            key=lambda u: uarch_order_index.get(u, len(uarch_custom_order))
+        )
+
+        all_tpgs = sorted(
+            {(m["iset"], m["dtype"]) for m in points_meta},
+            key=lambda t: (
+                iset_order_index.get(t[0], len(iset_custom_order)),
+                t[1],
+            )
+        )
+
+        # ---------------------------------------------------------------
+        # Color & marker maps
+        # ---------------------------------------------------------------
+        cmap = plt.get_cmap("tab20")
+        random.seed(6)
+
+        shuffled_indices = list(range(len(all_uarches)))
+        random.shuffle(shuffled_indices)
+
+        color_map = {
+            uarch: cmap(shuffled_indices[i] % cmap.N)
+            for i, uarch in enumerate(all_uarches)
+        }
+
+        marker_cycle = cycle(['X', '^', '*', 's', 'v', 'D', 'P', 'o'])
+        marker_map = {tpg: next(marker_cycle) for tpg in all_tpgs}
+
+        # ---------------------------------------------------------------
+        # Plot
+        # ---------------------------------------------------------------
+        plt.figure(figsize=(12, 6))
+
+        # --- ALL points ---
+        for res, lat, meta, is_p in zip(Zr, Yl, points_meta, pareto_3d):
+            plt.scatter(
+                res, lat,
+                c=[color_map[meta["uarch"]]],
+                marker=marker_map[(meta["iset"], meta["dtype"])],
+                s=140 if is_p else 80,  # highlight Pareto
+                edgecolors='k' if is_p else 'none',
+                linewidth=0.8 if is_p else 0,
+                alpha=1.0 if is_p else 0.6,
+                zorder=3 if is_p else 1,
+            )
+
+        # ---------------------------------------------------------------
+        # Labels
+        # ---------------------------------------------------------------
+        plt.xlabel("Resources ↓", fontsize=10)
+        plt.ylabel("Latency (CC) ↓", fontsize=10)
+        plt.yscale("log")
+        plt.grid(True, alpha=0.3, linestyle="--")
+
+        # ---------------------------------------------------------------
+        # Legend (ALL entries)
+        # ---------------------------------------------------------------
+        tpg_header = Line2D([], [], linestyle='none', label="TPG (GPIS | data type)")
+        tpg_elements = [
+            Line2D(
+                [0], [0],
+                marker=marker_map[tpg],
+                linestyle='',
+                color='black',
+                markersize=9,
+                label=f"{tpg[0]} | {tpg[1]}",
+            )
+            for tpg in all_tpgs
+        ]
+
+        legend_tpg = plt.legend(
+            handles=[tpg_header] + tpg_elements,
+            fontsize=8.5,
+            loc="upper right",
+            frameon=True,
+            bbox_to_anchor=(1.0, 1.005)
+        )
+        plt.gca().add_artist(legend_tpg)
+
+        uarch_header = Line2D([], [], linestyle='none', label="Microarchitecture")
+        uarch_elements = [
+            Line2D(
+                [0], [0],
+                marker='o',
+                linestyle='',
+                markerfacecolor=color_map[uarch],
+                markeredgewidth=0,
+                markersize=9,
+                label=uarch,
+            )
+            for uarch in all_uarches
+        ]
+
+        legend_uarch = plt.legend(
+            handles=[uarch_header] + uarch_elements,
+            fontsize=8.5,
+            loc="upper right",
+            frameon=True,
+            ncol=1,
+            bbox_to_anchor=(1.0, 0.60)
+        )
+        plt.gca().add_artist(legend_uarch)
+
+        # ---------------------------------------------------------------
+        # Save
+        # ---------------------------------------------------------------
+        plt.savefig(
+            self.out / "pareto_front_ress_lat_projection_all_points.pdf",
+            format="pdf",
+            bbox_inches="tight"
+        )
 
         plt.show()
 
@@ -3537,10 +3735,12 @@ def main(argv: Optional[List[str]]=None):
     # agg.plot_pareto_front_ress_lat(data)
 
     # 3D pareto front acc, lat, ress
-    # agg.plot_pareto_front_dist_lat_ress_3d(data)
+    agg.plot_pareto_front_dist_lat_ress_3d(data)
 
     # 3D pareto front projected on ress × lat, with accuracy annotations
     agg.plot_pareto_front_ress_lat_projection(data)
+
+    agg.plot_pareto_front_ress_lat_projection_all_points(data)
 
     ### IPC analysis ###
 
