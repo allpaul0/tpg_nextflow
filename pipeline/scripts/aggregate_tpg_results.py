@@ -340,36 +340,36 @@ class TPGResultsAggregator:
         """
         Produce a compact nickname from a simulator string.
         Patterns handled:
-        cv32e20 -> e2 
-        cv32e40 -> e4
+        cv32e20 -> s2 
+        cv32e40 -> s4
         ! Attention à l'ordre des règles !
         """
         
-        simulator = simulator.replace("cv32e20", "e2") # simplifie
-        simulator = simulator.replace("cv32e40", "e4") # simplifie
+        simulator = simulator.replace("cv32e20", "s2") # simplifie
+        simulator = simulator.replace("cv32e40", "s4") # simplifie
         simulator = simulator.replace("corev_pulp", "pulp") # simplifie
                
         # e4x_i-em0,1,2 -> renommage
-        simulator = simulator.replace("e4x_im0", "e4x_im0d0") #  pas de mult, pas de div
-        simulator = simulator.replace("e4x_im1", "e4x_im4d1") # change mult -> basé ressources, ajoute div
-        simulator = simulator.replace("e4x_im2", "e4x_im4d0") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("s4x_im0", "s4x_im0d0") #  pas de mult, pas de div
+        simulator = simulator.replace("s4x_im1", "s4x_im4d2") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("s4x_im2", "s4x_im4d0") # change mult -> basé ressources, ajoute div
 
-        simulator = simulator.replace("e4x_em0", "e4x_em0d0") # pas de mult, pas de div
-        simulator = simulator.replace("e4x_em1", "e4x_em4d1") # change mult -> basé ressources, ajoute div
-        simulator = simulator.replace("e4x_em2", "e4x_em4d0") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("s4x_em0", "s4x_em0d0") # pas de mult, pas de div
+        simulator = simulator.replace("s4x_em1", "s4x_em4d2") # change mult -> basé ressources, ajoute div
+        simulator = simulator.replace("s4x_em2", "s4x_em4d0") # change mult -> basé ressources, ajoute div
 
-        simulator = simulator.replace("e4px", "e4x_im5d1") # ajout mult dsp -> basé ressources
+        simulator = simulator.replace("s4px", "s4x_im5d2") # ajout mult dsp -> basé ressources
 
         # e2_i-em0-3 -> add div
-        simulator = simulator.replace("e2_im0", "e2_im0d1")
-        simulator = simulator.replace("e2_im1", "e2_im1d1")
-        simulator = simulator.replace("e2_im2", "e2_im2d1")
-        simulator = simulator.replace("e2_im3", "e2_im3d1")
+        simulator = simulator.replace("s2_im0", "s2_im0d0")
+        simulator = simulator.replace("s2_im1", "s2_im1d1")
+        simulator = simulator.replace("s2_im2", "s2_im2d1")
+        simulator = simulator.replace("s2_im3", "s2_im3d1")
 
-        simulator = simulator.replace("e2_em0", "e2_em0d1")
-        simulator = simulator.replace("e2_em1", "e2_em1d1")
-        simulator = simulator.replace("e2_em2", "e2_em2d1")
-        simulator = simulator.replace("e2_em3", "e2_em3d1")
+        simulator = simulator.replace("s2_em0", "s2_em0d0")
+        simulator = simulator.replace("s2_em1", "s2_em1d1")
+        simulator = simulator.replace("s2_em2", "s2_em2d1")
+        simulator = simulator.replace("s2_em3", "s2_em3d1")
 
         simulator = simulator.replace("px", "") # rassemble px, x
         simulator = simulator.replace("x", "") # rassemble px, x
@@ -2736,12 +2736,12 @@ class TPGResultsAggregator:
         iset_order_index = {s: i for i, s in enumerate(iset_custom_order)}
 
         uarch_custom_order = [
-            "e2_em0d1", "e2_em1d1", "e2_em2d1", "e2_em3d1",
-            "e2_im0d1", "e2_im1d1", "e2_im2d1", "e2_im3d1",
-            "e4_em0d0", "e4_em4d0", "e4_em4d1",
-            "e4_im0d0", "e4_im4d0", "e4_im4d1",
-            "e4_im5d1", "e4_im5d1_pulp",
-            "e4_im5d1_fpu", "e4_im5d1_pulp_fpu",
+            "s2_em0d0", "s2_em1d1", "s2_em2d1", "s2_em3d1",
+            "s2_im0d0", "s2_im1d1", "s2_im2d1", "s2_im3d1",
+            "s4_em0d0", "s4_em4d0", "s4_em4d2",
+            "s4_im0d0", "s4_im4d0", "s4_im4d2",
+            "s4_im5d2", "s4_im5d2_pulp",
+            "s4_im5d2_fpu", "s4_im5d2_pulp_fpu",
         ]
         uarch_order_index = {s: i for i, s in enumerate(uarch_custom_order)}
 
