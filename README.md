@@ -133,6 +133,12 @@ apptainer shell --bind x-heep:/opt/x-heep containers/x-heep.sif
 
 Do not use `apptainer run` to enter the `x-heep.sif` container, use `apptainer shell`, which allows to preserve defined environment variables from the def file
 
+### Development allowing modifs 
+
+```bash
+ apptainer shell --overlay containers/overlay.img --bind x-heep:/opt/x-heep containers/x-heep.sif
+```
+
 ### Development inference 
 
 ```bash
