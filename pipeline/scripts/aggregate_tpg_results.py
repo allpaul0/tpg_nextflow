@@ -2745,6 +2745,12 @@ class TPGResultsAggregator:
         ]
         uarch_order_index = {s: i for i, s in enumerate(uarch_custom_order)}
 
+        dtype_map = {
+            "float": "fp32",
+            "double": "fp64",
+            "fixedpt": "fixed"
+        }
+
         # ---------------------------------------------------------------
         # Pre-filter ISA
         # ---------------------------------------------------------------
@@ -2785,7 +2791,7 @@ class TPGResultsAggregator:
                         points_meta.append({
                             "uarch": uarch,
                             "iset": archgroup.iset,
-                            "dtype": archgroup.dtype,
+                            "dtype":  dtype_map.get(archgroup.dtype, archgroup.dtype),
                             "accuracy": archgroup.accuracy
                         })
 
@@ -2823,11 +2829,22 @@ class TPGResultsAggregator:
         # ---------------------------------------------------------------
         # Color & marker maps
         # ---------------------------------------------------------------
+        import random
         cmap = plt.get_cmap("tab20")
+        num_colors = len(pareto_uarches)
+
+        random.seed(6)  # any integer will work
+
+        # Create a list of indices and shuffle them internally
+        shuffled_indices = list(range(num_colors))
+        random.shuffle(shuffled_indices)
+
+        # Map uarch to a shuffled color without changing the uarch order
         color_map = {
-            uarch: cmap(i % cmap.N)
+            uarch: cmap(shuffled_indices[i] % cmap.N)
             for i, uarch in enumerate(pareto_uarches)
         }
+        color_map["s4_im5d2_fpu"] = (0.0, 1.0, 1.0, 0.3) # cyan
 
         marker_cycle = cycle([
             'X',  # x filled
@@ -2852,7 +2869,7 @@ class TPGResultsAggregator:
         # ---------------------------------------------------------------
         # Plot
         # ---------------------------------------------------------------
-        plt.figure(figsize=(18.5, 9))
+        plt.figure(figsize=(12, 6)) #18.5, 9
 
 
         draw_accuracy_enveloppes = False
@@ -3019,6 +3036,7 @@ class TPGResultsAggregator:
             best_meta = meta_list[best_idx]
 
             # if lat is around 1e5, augment the offset
+            offset_x = 0
             offset = 0
             if lat[best_idx] > 1e5:
                 offset = 8000
@@ -3028,20 +3046,23 @@ class TPGResultsAggregator:
                 offset = 500
             elif lat[best_idx] > 1e2:
                 offset = 50
+            # if the resources value are > 150 reduce the offset on the x axis
+            if res[best_idx] > 150:
+                 offset_x = -3
             
             # make this bigger
             plt.text(
-                res[best_idx] - 2.7,
+                res[best_idx] - 2.7 + offset_x,
                 lat[best_idx] + offset,
                 f"dist to obj: {best_meta['accuracy']:.3f}",
-                fontsize=10,
+                fontsize=9,
                 # make bold
                 #fontweight="bold",
                 color="blue",
                 ha="left",
                 va="bottom",
                 alpha=1.0,
-                zorder=5
+                zorder=5,
             )
 
 
@@ -3051,7 +3072,7 @@ class TPGResultsAggregator:
                 res, lat,
                 c=[color_map[meta["uarch"]]],
                 marker=marker_map[(meta["iset"], meta["dtype"])],
-                s=160,
+                s=120,
                 edgecolors='k',
                 linewidth=0.8,
                 zorder=3,
@@ -3079,7 +3100,7 @@ class TPGResultsAggregator:
             Yl[non_pareto_mask],   # latency
             c="gray",
             s=40,
-            alpha=0.25,
+            alpha=0.40,
             linewidths=0,
             zorder=0,
         )
@@ -3087,8 +3108,8 @@ class TPGResultsAggregator:
         # ---------------------------------------------------------------
         # Styling
         # ---------------------------------------------------------------
-        plt.xlabel("Resources ↓", fontsize=12, fontweight="bold")
-        plt.ylabel("Latency (CC) ↓", fontsize=12, fontweight="bold")
+        plt.xlabel("Resources ↓", fontsize=10) #fontweight="bold")
+        plt.ylabel("Latency (CC) ↓", fontsize=10)#fontweight="bold"
         plt.yscale("log")
         plt.grid(True, alpha=0.3, linestyle="--")
         #plt.title("Projected Pareto Front (3D dominance → 2D view)",fontsize=14,fontweight="bold",)
@@ -3096,20 +3117,42 @@ class TPGResultsAggregator:
         # ---------------------------------------------------------------
         # Legend
         # ---------------------------------------------------------------
-        tpg_header = Line2D([], [], linestyle='none', label="TPG (ISGP | data type)")
+
+
+        # -------------------------
+        # Top row: TPG legend
+        # -------------------------
+        tpg_header = Line2D([], [], linestyle='none', label="TPG (GPIS | data type)")
         tpg_elements = [
             Line2D(
                 [0], [0],
                 marker=marker_map[tpg],
                 linestyle='',
                 color='black',
-                markersize=10,
+                markersize=9,
                 label=f"{tpg[0]} | {tpg[1]}",
             )
             for tpg in pareto_tpgs
         ]
 
+        # Create TPG legend (top row)
+        legend_tpg = plt.legend(
+            handles=[tpg_header] + tpg_elements,
+            fontsize=8.5,
+            loc="upper right",
+            frameon=True,
+            handlelength=1.2,
+            handletextpad=0.6,
+            labelspacing=0.5,
+            bbox_to_anchor=(1.0, 1.005)
+        )
+        plt.gca().add_artist(legend_tpg)  # keep it on the axes
+
+        # -------------------------
+        # Bottom row: Uarch legend (1 column)
+        # -------------------------
         uarch_header = Line2D([], [], linestyle='none', label="Microarchitecture")
+
         uarch_elements = [
             Line2D(
                 [0], [0],
@@ -3117,24 +3160,26 @@ class TPGResultsAggregator:
                 linestyle='',
                 markerfacecolor=color_map[uarch],
                 markeredgewidth=0,
-                markersize=10,
+                markersize=9,
                 label=uarch,
             )
             for uarch in pareto_uarches
         ]
 
-        plt.legend(
-            handles=(
-                [tpg_header]
-                + tpg_elements
-                + [Line2D([], [], linestyle='none', label="")]
-                + [uarch_header]
-                + uarch_elements
-            ),
-            fontsize=9,
-            loc="best",
+        # Create Uarch legend (1 column, below TPG)
+        # Adjust bbox_to_anchor to move it down (y < 1.0)
+        legend_uarch = plt.legend(
+            handles=[uarch_header] + uarch_elements,
+            fontsize=8.5,
+            loc="upper right",
             frameon=True,
+            handlelength=1.2,
+            handletextpad=0.6,
+            labelspacing=0.5,
+            ncol=1,  # one column
+            bbox_to_anchor=(1.0, 0.788)  # x=right edge, y=slightly below top
         )
+        plt.gca().add_artist(legend_uarch)
 
         #plt.tight_layout()
 
@@ -3144,6 +3189,15 @@ class TPGResultsAggregator:
             format="pdf",
             bbox_inches="tight"
         )
+
+        plt.savefig(
+            self.out / "pareto_front_ress_lat_projection.svg",
+            format="svg",
+            bbox_inches="tight"
+        )
+
+
+        plt.show()
 
     def plot_pareto_front_ress_lat_projection_all_points(self, data):
 
