@@ -45,7 +45,8 @@ workflow {
 
         // Generate JSON configs using Python
         // JSON config is a mapping: TPG, uarch, isa, abi, dtype, compiler
-        def ch_configs = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs, params.uarch_config)
+        // uarch list defines which subgroup to generate configs for e.g. "cv32e40px", "cv32e40px_fpu"
+        def ch_configs = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs, params.uarch_list)
 
         def takeFirstOnly = false  // or false
 
