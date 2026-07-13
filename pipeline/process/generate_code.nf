@@ -3,7 +3,7 @@ process generate_code {
     memory '1 GB'
     time '5m 30s'
 
-    publishDir "${params.outdir}/codegen_results", mode: 'copy'
+    // publishDir "${params.outdir}/codegen_results", mode: 'copy'
 
     input:
     path tpg_folder

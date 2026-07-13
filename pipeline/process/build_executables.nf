@@ -4,7 +4,7 @@ process build_executables {
     memory '1 GB'
     time '4m 30s'
 
-    publishDir "${params.outdir}/executables", mode: 'copy'
+    // publishDir "${params.outdir}/executables", mode: 'copy'
     
     input:
     path expe_folder

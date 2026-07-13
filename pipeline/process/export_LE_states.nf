@@ -3,7 +3,7 @@ process export_LE_states {
     memory '1 GB'
     time '1h'
 
-    publishDir "${params.outdir}/LE_states", mode: 'copy'
+    // publishDir "${params.outdir}/LE_states", mode: 'copy'
 
     input:
     path tpg_folder
