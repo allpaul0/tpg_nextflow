@@ -42,7 +42,7 @@ apptainer exec \
         && cp /armlearn-wrapper/params/TeamsInstrumented/codegenParams.json /params/codegenParams.json \
         && ./armlearn-wrapper/build/CodeGen \
         && mv /outLogs/codegen /outLogs/codegen_TeamsInstrumented \
-        && cp /armlearn-wrapper/params/default/codegenParams.json /params/codegenParams.json \
+        && cp /armlearn-wrapper/params/TeamsDefault/codegenParams.json /params/codegenParams.json \
         && ./armlearn-wrapper/build/CodeGen \
         && rm /params/codegenParams.json \
         && rm /params/AllTarget.csv /params/ValidationTrajectories.txt"
