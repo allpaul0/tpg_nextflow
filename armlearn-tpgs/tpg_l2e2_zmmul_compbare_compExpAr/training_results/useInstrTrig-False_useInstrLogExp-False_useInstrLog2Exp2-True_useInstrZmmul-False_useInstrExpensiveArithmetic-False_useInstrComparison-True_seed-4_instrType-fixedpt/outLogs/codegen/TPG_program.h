@@ -1,6 +1,6 @@
 /**
  * File generated with GEGELATI v2.0.0
- * On the 2026-05-28 21:29:10
+ * On the 2026-07-14 09:07:12
  * With the CodeGen::GotoProgramGenerationEngine.
  */
 #ifndef C_TPG_program_H
@@ -303,16 +303,6 @@ inline __attribute__((always_inline)) fixedpt P25(const fixedpt * __restrict__ i
 inline __attribute__((always_inline)) fixedpt P26(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
-		fixedpt op0 = in1[2];
-		fixedpt op1 = in2[0];
-		reg[0] = (op0 > op1) ? op0 : op1;
-	}
-	return reg[0];
-}
-
-inline __attribute__((always_inline)) fixedpt P27(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
-	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-	{
 		fixedpt op0 = in4[1];
 		fixedpt op1 = in3[0];
 		reg[0] = op0 + op1;
@@ -320,7 +310,7 @@ inline __attribute__((always_inline)) fixedpt P27(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P28(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P27(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -330,7 +320,7 @@ inline __attribute__((always_inline)) fixedpt P28(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P29(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P28(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in1[0];
@@ -345,6 +335,16 @@ inline __attribute__((always_inline)) fixedpt P29(const fixedpt * __restrict__ i
 	{
 		fixedpt op0 = reg[3];
 		fixedpt op1 = in3[2];
+		reg[0] = op0 + op1;
+	}
+	return reg[0];
+}
+
+inline __attribute__((always_inline)) fixedpt P29(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	{
+		fixedpt op0 = in4[1];
+		fixedpt op1 = in3[1];
 		reg[0] = op0 + op1;
 	}
 	return reg[0];
@@ -364,7 +364,7 @@ inline __attribute__((always_inline)) fixedpt P31(const fixedpt * __restrict__ i
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
-		fixedpt op1 = in3[1];
+		fixedpt op1 = in1[0];
 		reg[0] = op0 + op1;
 	}
 	return reg[0];
@@ -374,23 +374,13 @@ inline __attribute__((always_inline)) fixedpt P32(const fixedpt * __restrict__ i
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
-		fixedpt op1 = in1[0];
-		reg[0] = op0 + op1;
-	}
-	return reg[0];
-}
-
-inline __attribute__((always_inline)) fixedpt P33(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
-	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-	{
-		fixedpt op0 = in4[1];
 		fixedpt op1 = in1[2];
 		reg[0] = (op0 > op1) ? op0 : op1;
 	}
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P34(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P33(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -405,7 +395,7 @@ inline __attribute__((always_inline)) fixedpt P34(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P35(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P34(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in2[2];
@@ -420,7 +410,7 @@ inline __attribute__((always_inline)) fixedpt P35(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P36(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P35(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in3[2];
@@ -435,7 +425,7 @@ inline __attribute__((always_inline)) fixedpt P36(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P37(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P36(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in1[1];
@@ -450,7 +440,7 @@ inline __attribute__((always_inline)) fixedpt P37(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P38(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P37(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in3[0];
@@ -470,7 +460,7 @@ inline __attribute__((always_inline)) fixedpt P38(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P39(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P38(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[2];
@@ -480,7 +470,7 @@ inline __attribute__((always_inline)) fixedpt P39(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P40(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P39(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in1[0];
@@ -500,7 +490,7 @@ inline __attribute__((always_inline)) fixedpt P40(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P41(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P40(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in1[1];
@@ -515,7 +505,7 @@ inline __attribute__((always_inline)) fixedpt P41(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P42(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P41(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -525,7 +515,7 @@ inline __attribute__((always_inline)) fixedpt P42(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P43(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P42(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[0];
@@ -535,7 +525,7 @@ inline __attribute__((always_inline)) fixedpt P43(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P44(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P43(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -545,7 +535,7 @@ inline __attribute__((always_inline)) fixedpt P44(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P45(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P44(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in1[1];
@@ -560,7 +550,7 @@ inline __attribute__((always_inline)) fixedpt P45(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P46(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P45(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[3];
@@ -570,7 +560,7 @@ inline __attribute__((always_inline)) fixedpt P46(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P47(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P46(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -580,7 +570,7 @@ inline __attribute__((always_inline)) fixedpt P47(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P48(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P47(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[3];
@@ -590,7 +580,7 @@ inline __attribute__((always_inline)) fixedpt P48(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P49(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P48(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in2[2];
@@ -605,7 +595,7 @@ inline __attribute__((always_inline)) fixedpt P49(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P50(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P49(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[3];
@@ -615,7 +605,7 @@ inline __attribute__((always_inline)) fixedpt P50(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P51(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P50(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -625,7 +615,7 @@ inline __attribute__((always_inline)) fixedpt P51(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P52(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P51(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in1[1];
@@ -640,7 +630,7 @@ inline __attribute__((always_inline)) fixedpt P52(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P53(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P52(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in2[0];
@@ -655,7 +645,7 @@ inline __attribute__((always_inline)) fixedpt P53(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P54(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P53(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -665,7 +655,7 @@ inline __attribute__((always_inline)) fixedpt P54(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P55(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P54(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -675,7 +665,7 @@ inline __attribute__((always_inline)) fixedpt P55(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P56(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P55(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -690,7 +680,7 @@ inline __attribute__((always_inline)) fixedpt P56(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P57(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P56(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -700,7 +690,7 @@ inline __attribute__((always_inline)) fixedpt P57(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P58(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P57(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = reg[5];
@@ -715,7 +705,7 @@ inline __attribute__((always_inline)) fixedpt P58(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P59(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P58(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[4];
@@ -725,7 +715,7 @@ inline __attribute__((always_inline)) fixedpt P59(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P60(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P59(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in2[2];
@@ -740,7 +730,7 @@ inline __attribute__((always_inline)) fixedpt P60(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P61(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P60(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in4[1];
@@ -750,7 +740,7 @@ inline __attribute__((always_inline)) fixedpt P61(const fixedpt * __restrict__ i
 	return reg[0];
 }
 
-inline __attribute__((always_inline)) fixedpt P62(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
+inline __attribute__((always_inline)) fixedpt P61(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
 		fixedpt op0 = in1[0];

@@ -1,17 +1,17 @@
 # PolicyStats
 ## Topology info
-Teams:		10
-Edges:		44
+Teams:		9
+Edges:		43
 Actions:	8
 Stages		3
-Vertex/stage:	{0,1} {1,8} {2,17} {3,19} 
+Vertex/stage:	{0,1} {1,8} {2,16} {3,19} 
 Use/action:	2.875: {0,2} {1,3} {2,7} {4,5} {5,2} {6,2} {7,1} {8,1} 
 
 ## Context Program info
 Programs:	34
 Line/prog:	1.08824
 Intr/prog:	0
-Use/prog:	1.29412
+Use/prog:	1.26471
 Use/instr:	6.16667: {0,8}{1,9}{2,12}{3,4}{4,3}{5,1}
 
 ## Data info

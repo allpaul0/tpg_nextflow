@@ -1,6 +1,6 @@
 /**
  * File generated with GEGELATI v2.0.0
- * On the 2026-05-28 21:28:27
+ * On the 2026-07-14 09:06:22
  * With the CodeGen::GotoProgramGenerationEngine.
  */
 #ifndef C_TPG_program_H
@@ -185,9 +185,9 @@ inline __attribute__((always_inline)) fixedpt P16(const fixedpt * __restrict__ i
 inline __attribute__((always_inline)) fixedpt P17(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
-		fixedpt op0 = reg[3];
-		fixedpt op1 = in4[0];
-		reg[0] = op0 + op1;
+		fixedpt op0 = in4[0];
+		fixedpt op1 = in4[2];
+		reg[0] = (op0 > op1) ? op0 : op1;
 	}
 	return reg[0];
 }
@@ -195,9 +195,9 @@ inline __attribute__((always_inline)) fixedpt P17(const fixedpt * __restrict__ i
 inline __attribute__((always_inline)) fixedpt P18(const fixedpt * __restrict__ in1, const fixedpt * __restrict__ in2, const fixedpt * __restrict__ in3, const fixedpt * __restrict__ in4) {
 	fixedpt reg[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	{
-		fixedpt op0 = in4[0];
-		fixedpt op1 = in4[2];
-		reg[0] = (op0 > op1) ? op0 : op1;
+		fixedpt op0 = reg[3];
+		fixedpt op1 = in4[0];
+		reg[0] = op0 + op1;
 	}
 	return reg[0];
 }

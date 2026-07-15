@@ -1,6 +1,6 @@
 /**
  * File generated with GEGELATI v2.0.0
- * On the 2026-05-28 21:28:51
+ * On the 2026-07-14 09:06:52
  * With the CodeGen::TPGGenerationEngine.
  */
 
@@ -32,16 +32,16 @@ void inferenceTPG(fixedpt *actions,
 	/* Jump table — static const lets GCC keep it in .rodata and
 	   potentially cache it in a register across iterations.       */
 	static const void * const jump_table[] = {
-		&&L_T0, &&L_T1, &&L_T2, &&L_T3, &&L_T4, &&L_T5, &&L_T6, &&L_T7, &&L_T8, &&L_T9, &&L_T10, &&L_T11, &&L_T12, &&L_A3, &&L_A4, &&L_A6, &&L_A5, &&L_A0, &&L_A8, &&L_A7, &&L_A2
+		&&L_T0, &&L_T1, &&L_T2, &&L_T3, &&L_T4, &&L_T5, &&L_T6, &&L_T7, &&L_T8, &&L_T9, &&L_T10, &&L_A3, &&L_A4, &&L_A6, &&L_A5, &&L_A0, &&L_A8, &&L_A7, &&L_A2
     };
 
-	/* Initial dispatch — always start at T12 */
-	goto *jump_table[12];	/* == &&L_T12 */
+	/* Initial dispatch — always start at T10 */
+	goto *jump_table[10];	/* == &&L_T10 */
 
 	/* ---- Team nodes ----------------------------------------- */
 
 L_T0: {
-		static const int next[2] = { 13, 15 };
+		static const int next[2] = { 11, 13 };
 		fixedpt  scores[2];
 
         scores[0] = P0(in1, in2, in3, in4);
@@ -51,7 +51,7 @@ L_T0: {
 	}
 
 L_T1: {
-		static const int next[2] = { 14, 17 };
+		static const int next[2] = { 12, 15 };
 		fixedpt  scores[2];
 
         scores[0] = P2(in1, in2, in3, in4);
@@ -61,7 +61,7 @@ L_T1: {
 	}
 
 L_T2: {
-		static const int next[4] = { 1, 18, 16, 15 };
+		static const int next[4] = { 1, 16, 14, 13 };
 		fixedpt  scores[4];
 
         scores[0] = P4(in1, in2, in3, in4);
@@ -73,7 +73,7 @@ L_T2: {
 	}
 
 L_T3: {
-		static const int next[5] = { 15, 14, 0, 16, 17 };
+		static const int next[5] = { 13, 12, 0, 14, 15 };
 		fixedpt  scores[5];
 
         scores[0] = P8(in1, in2, in3, in4);
@@ -86,7 +86,7 @@ L_T3: {
 	}
 
 L_T4: {
-		static const int next[6] = { 15, 18, 16, 17, 3, 15 };
+		static const int next[6] = { 13, 16, 14, 15, 3, 13 };
 		fixedpt  scores[6];
 
         scores[0] = P12(in1, in2, in3, in4);
@@ -100,27 +100,18 @@ L_T4: {
 	}
 
 L_T5: {
-		static const int next[1] = { 4 };
-		fixedpt  scores[1];
-
-        scores[0] = P17(in1, in2, in3, in4);
-
-		goto *jump_table[next[bestProgram(scores, 1)]];
-	}
-
-L_T6: {
 		static const int next[3] = { 2, 4, 3 };
 		fixedpt  scores[3];
 
-        scores[0] = P18(in1, in2, in3, in4);
-        scores[1] = P17(in1, in2, in3, in4);
+        scores[0] = P17(in1, in2, in3, in4);
+        scores[1] = P18(in1, in2, in3, in4);
         scores[2] = P19(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
-L_T7: {
-		static const int next[2] = { 6, 17 };
+L_T6: {
+		static const int next[2] = { 5, 15 };
 		fixedpt  scores[2];
 
         scores[0] = P20(in1, in2, in3, in4);
@@ -129,17 +120,8 @@ L_T7: {
 		goto *jump_table[next[bestProgram(scores, 2)]];
 	}
 
-L_T8: {
-		static const int next[1] = { 6 };
-		fixedpt  scores[1];
-
-        scores[0] = P20(in1, in2, in3, in4);
-
-		goto *jump_table[next[bestProgram(scores, 1)]];
-	}
-
-L_T9: {
-		static const int next[3] = { 8, 5, 6 };
+L_T7: {
+		static const int next[3] = { 5, 4, 5 };
 		fixedpt  scores[3];
 
         scores[0] = P22(in1, in2, in3, in4);
@@ -149,8 +131,8 @@ L_T9: {
 		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
-L_T10: {
-		static const int next[4] = { 9, 19, 17, 7 };
+L_T8: {
+		static const int next[4] = { 7, 17, 15, 6 };
 		fixedpt  scores[4];
 
         scores[0] = P24(in1, in2, in3, in4);
@@ -161,8 +143,8 @@ L_T10: {
 		goto *jump_table[next[bestProgram(scores, 4)]];
 	}
 
-L_T11: {
-		static const int next[4] = { 10, 10, 2, 17 };
+L_T9: {
+		static const int next[4] = { 8, 8, 2, 15 };
 		fixedpt  scores[4];
 
         scores[0] = P28(in1, in2, in3, in4);
@@ -173,8 +155,8 @@ L_T11: {
 		goto *jump_table[next[bestProgram(scores, 4)]];
 	}
 
-L_T12: {
-		static const int next[5] = { 19, 11, 20, 2, 10 };
+L_T10: {
+		static const int next[5] = { 17, 9, 18, 2, 8 };
 		fixedpt  scores[5];
 
         scores[0] = P31(in1, in2, in3, in4);

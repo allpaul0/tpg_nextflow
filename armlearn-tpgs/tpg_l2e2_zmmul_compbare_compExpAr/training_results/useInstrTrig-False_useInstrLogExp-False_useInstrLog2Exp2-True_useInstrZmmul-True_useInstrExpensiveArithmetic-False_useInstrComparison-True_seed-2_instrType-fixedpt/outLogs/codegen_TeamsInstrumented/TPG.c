@@ -1,6 +1,6 @@
 /**
  * File generated with GEGELATI v2.0.0
- * On the 2026-05-28 21:28:31
+ * On the 2026-07-14 09:06:28
  * With the CodeGen::TPGGenerationEngine.
  */
 
@@ -34,18 +34,18 @@ void inferenceTPG(fixedpt *actions,
 	/* Jump table — static const lets GCC keep it in .rodata and
 	   potentially cache it in a register across iterations.       */
 	static const void * const jump_table[] = {
-		&&L_T0, &&L_T1, &&L_T2, &&L_T3, &&L_T4, &&L_T5, &&L_T6, &&L_T7, &&L_T8, &&L_T9, &&L_T10, &&L_T11, &&L_T12, &&L_A4, &&L_A0, &&L_A3, &&L_A5, &&L_A6, &&L_A1, &&L_A2
+		&&L_T0, &&L_T1, &&L_T2, &&L_T3, &&L_T4, &&L_T5, &&L_T6, &&L_T7, &&L_T8, &&L_T9, &&L_T10, &&L_T11, &&L_A4, &&L_A0, &&L_A3, &&L_A5, &&L_A6, &&L_A1, &&L_A2
     };
 
-	/* Initial dispatch — always start at T12 */
-	goto *jump_table[12];	/* == &&L_T12 */
+	/* Initial dispatch — always start at T11 */
+	goto *jump_table[11];	/* == &&L_T11 */
 
 	uint32_t start, end;
 
 	/* ---- Team nodes ----------------------------------------- */
 
 L_T0: {
-		static const int next[3] = { 13, 15, 14 };
+		static const int next[3] = { 12, 14, 13 };
 		fixedpt  scores[3];
 
 		__asm__ volatile("T0_start:");
@@ -64,186 +64,188 @@ L_T0: {
 	}
 
 L_T1: {
-		static const int next[1] = { 14 };
-		fixedpt  scores[1];
+		static const int next[4] = { 13, 0, 16, 0 };
+		fixedpt  scores[4];
 
 		__asm__ volatile("T1_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
         scores[0] = P3(in1, in2, in3, in4);
+        scores[1] = P4(in1, in2, in3, in4);
+        scores[2] = P5(in1, in2, in3, in4);
+        scores[3] = P6(in1, in2, in3, in4);
 
 		__asm__ volatile("T1_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[1] = end - start;
 
-		goto *jump_table[next[bestProgram(scores, 1)]];
+		goto *jump_table[next[bestProgram(scores, 4)]];
 	}
 
 L_T2: {
-		static const int next[4] = { 14, 0, 17, 0 };
-		fixedpt  scores[4];
+		static const int next[3] = { 0, 0, 16 };
+		fixedpt  scores[3];
 
 		__asm__ volatile("T2_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
-        scores[0] = P4(in1, in2, in3, in4);
-        scores[1] = P5(in1, in2, in3, in4);
-        scores[2] = P6(in1, in2, in3, in4);
-        scores[3] = P7(in1, in2, in3, in4);
+        scores[0] = P6(in1, in2, in3, in4);
+        scores[1] = P4(in1, in2, in3, in4);
+        scores[2] = P7(in1, in2, in3, in4);
 
 		__asm__ volatile("T2_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[2] = end - start;
 
-		goto *jump_table[next[bestProgram(scores, 4)]];
+		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
 L_T3: {
-		static const int next[3] = { 0, 0, 17 };
-		fixedpt  scores[3];
+		static const int next[4] = { 13, 13, 0, 17 };
+		fixedpt  scores[4];
 
 		__asm__ volatile("T3_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
-        scores[0] = P7(in1, in2, in3, in4);
-        scores[1] = P5(in1, in2, in3, in4);
-        scores[2] = P8(in1, in2, in3, in4);
+        scores[0] = P8(in1, in2, in3, in4);
+        scores[1] = P9(in1, in2, in3, in4);
+        scores[2] = P4(in1, in2, in3, in4);
+        scores[3] = P10(in1, in2, in3, in4);
 
 		__asm__ volatile("T3_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[3] = end - start;
 
-		goto *jump_table[next[bestProgram(scores, 3)]];
+		goto *jump_table[next[bestProgram(scores, 4)]];
 	}
 
 L_T4: {
-		static const int next[4] = { 14, 1, 0, 18 };
-		fixedpt  scores[4];
+		static const int next[3] = { 17, 1, 0 };
+		fixedpt  scores[3];
 
 		__asm__ volatile("T4_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
-        scores[0] = P9(in1, in2, in3, in4);
-        scores[1] = P10(in1, in2, in3, in4);
-        scores[2] = P5(in1, in2, in3, in4);
-        scores[3] = P11(in1, in2, in3, in4);
+        scores[0] = P11(in1, in2, in3, in4);
+        scores[1] = P12(in1, in2, in3, in4);
+        scores[2] = P4(in1, in2, in3, in4);
 
 		__asm__ volatile("T4_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[4] = end - start;
 
-		goto *jump_table[next[bestProgram(scores, 4)]];
+		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
 L_T5: {
-		static const int next[3] = { 18, 2, 0 };
-		fixedpt  scores[3];
+		static const int next[2] = { 3, 2 };
+		fixedpt  scores[2];
 
 		__asm__ volatile("T5_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
-        scores[0] = P12(in1, in2, in3, in4);
-        scores[1] = P13(in1, in2, in3, in4);
-        scores[2] = P5(in1, in2, in3, in4);
+        scores[0] = P13(in1, in2, in3, in4);
+        scores[1] = P14(in1, in2, in3, in4);
 
 		__asm__ volatile("T5_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[5] = end - start;
 
-		goto *jump_table[next[bestProgram(scores, 3)]];
+		goto *jump_table[next[bestProgram(scores, 2)]];
 	}
 
 L_T6: {
-		static const int next[2] = { 4, 3 };
-		fixedpt  scores[2];
+		static const int next[5] = { 2, 4, 0, 17, 4 };
+		fixedpt  scores[5];
 
 		__asm__ volatile("T6_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
         scores[0] = P14(in1, in2, in3, in4);
         scores[1] = P15(in1, in2, in3, in4);
+        scores[2] = P6(in1, in2, in3, in4);
+        scores[3] = P11(in1, in2, in3, in4);
+        scores[4] = P16(in1, in2, in3, in4);
 
 		__asm__ volatile("T6_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[6] = end - start;
 
-		goto *jump_table[next[bestProgram(scores, 2)]];
+		goto *jump_table[next[bestProgram(scores, 5)]];
 	}
 
 L_T7: {
-		static const int next[5] = { 3, 5, 0, 18, 5 };
-		fixedpt  scores[5];
+		static const int next[3] = { 3, 4, 6 };
+		fixedpt  scores[3];
 
 		__asm__ volatile("T7_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
-        scores[0] = P15(in1, in2, in3, in4);
-        scores[1] = P16(in1, in2, in3, in4);
-        scores[2] = P7(in1, in2, in3, in4);
-        scores[3] = P12(in1, in2, in3, in4);
-        scores[4] = P17(in1, in2, in3, in4);
+        scores[0] = P17(in1, in2, in3, in4);
+        scores[1] = P18(in1, in2, in3, in4);
+        scores[2] = P19(in1, in2, in3, in4);
 
 		__asm__ volatile("T7_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[7] = end - start;
 
-		goto *jump_table[next[bestProgram(scores, 5)]];
+		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
 L_T8: {
-		static const int next[3] = { 4, 5, 7 };
-		fixedpt  scores[3];
+		static const int next[2] = { 7, 15 };
+		fixedpt  scores[2];
 
 		__asm__ volatile("T8_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
-        scores[0] = P18(in1, in2, in3, in4);
-        scores[1] = P19(in1, in2, in3, in4);
-        scores[2] = P20(in1, in2, in3, in4);
+        scores[0] = P20(in1, in2, in3, in4);
+        scores[1] = P21(in1, in2, in3, in4);
 
 		__asm__ volatile("T8_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[8] = end - start;
 
-		goto *jump_table[next[bestProgram(scores, 3)]];
+		goto *jump_table[next[bestProgram(scores, 2)]];
 	}
 
 L_T9: {
-		static const int next[2] = { 8, 16 };
-		fixedpt  scores[2];
+		static const int next[3] = { 3, 7, 5 };
+		fixedpt  scores[3];
 
 		__asm__ volatile("T9_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
-        scores[0] = P21(in1, in2, in3, in4);
-        scores[1] = P22(in1, in2, in3, in4);
+        scores[0] = P22(in1, in2, in3, in4);
+        scores[1] = P23(in1, in2, in3, in4);
+        scores[2] = P24(in1, in2, in3, in4);
 
 		__asm__ volatile("T9_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[9] = end - start;
 
-		goto *jump_table[next[bestProgram(scores, 2)]];
+		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
 L_T10: {
-		static const int next[3] = { 4, 8, 6 };
+		static const int next[3] = { 15, 9, 8 };
 		fixedpt  scores[3];
 
 		__asm__ volatile("T10_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
-        scores[0] = P23(in1, in2, in3, in4);
-        scores[1] = P24(in1, in2, in3, in4);
-        scores[2] = P25(in1, in2, in3, in4);
+        scores[0] = P25(in1, in2, in3, in4);
+        scores[1] = P26(in1, in2, in3, in4);
+        scores[2] = P27(in1, in2, in3, in4);
 
 		__asm__ volatile("T10_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
@@ -254,41 +256,22 @@ L_T10: {
 	}
 
 L_T11: {
-		static const int next[3] = { 16, 10, 9 };
-		fixedpt  scores[3];
+		static const int next[5] = { 7, 3, 18, 10, 7 };
+		fixedpt  scores[5];
 
 		__asm__ volatile("T11_start:");
 		CSR_READ(CSR_REG_MCYCLE, &start);
 
-        scores[0] = P26(in1, in2, in3, in4);
-        scores[1] = P27(in1, in2, in3, in4);
-        scores[2] = P28(in1, in2, in3, in4);
+        scores[0] = P28(in1, in2, in3, in4);
+        scores[1] = P29(in1, in2, in3, in4);
+        scores[2] = P30(in1, in2, in3, in4);
+        scores[3] = P31(in1, in2, in3, in4);
+        scores[4] = P32(in1, in2, in3, in4);
 
 		__asm__ volatile("T11_end:");
 		CSR_READ(CSR_REG_MCYCLE, &end);
 
 		team_cycles[11] = end - start;
-
-		goto *jump_table[next[bestProgram(scores, 3)]];
-	}
-
-L_T12: {
-		static const int next[5] = { 8, 4, 19, 11, 8 };
-		fixedpt  scores[5];
-
-		__asm__ volatile("T12_start:");
-		CSR_READ(CSR_REG_MCYCLE, &start);
-
-        scores[0] = P29(in1, in2, in3, in4);
-        scores[1] = P30(in1, in2, in3, in4);
-        scores[2] = P31(in1, in2, in3, in4);
-        scores[3] = P32(in1, in2, in3, in4);
-        scores[4] = P33(in1, in2, in3, in4);
-
-		__asm__ volatile("T12_end:");
-		CSR_READ(CSR_REG_MCYCLE, &end);
-
-		team_cycles[12] = end - start;
 
 		goto *jump_table[next[bestProgram(scores, 5)]];
 	}

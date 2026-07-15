@@ -1,18 +1,18 @@
 # PolicyStats
 ## Topology info
-Teams:		30
-Edges:		75
+Teams:		26
+Edges:		71
 Actions:	8
-Stages		7
-Vertex/stage:	{0,1} {1,5} {2,17} {3,22} {4,15} {5,10} {6,4} {7,2} 
+Stages		6
+Vertex/stage:	{0,1} {1,5} {2,17} {3,24} {4,19} {5,4} {6,2} 
 Use/action:	2.875: {0,3} {1,2} {2,1} {4,2} {5,5} {6,4} {7,2} {8,4} 
 
 ## Context Program info
-Programs:	63
-Line/prog:	1.09524
+Programs:	59
+Line/prog:	1.10169
 Intr/prog:	0
-Use/prog:	1.19048
-Use/instr:	17.25: {0,35}{1,13}{2,19}{3,2}
+Use/prog:	1.20339
+Use/instr:	16.25: {0,32}{1,12}{2,19}{3,2}
 
 ## Data info
 
@@ -27,16 +27,16 @@ Locations:	2
 {0,9} {1,5} 
 
 ### DataHandler 2
-Accesses:	11
+Accesses:	10
 Locations:	3
-{0,1} {1,8} {2,2} 
+{0,1} {1,8} {2,1} 
 
 ### DataHandler 3
-Accesses:	39
+Accesses:	36
 Locations:	3
-{0,6} {1,21} {2,12} 
+{0,6} {1,19} {2,11} 
 
 ### DataHandler 4
-Accesses:	44
+Accesses:	40
 Locations:	6
-{0,6} {1,15} {2,6} {3,15} {4,1} {5,1} 
+{0,6} {1,14} {2,5} {3,13} {4,1} {5,1} 

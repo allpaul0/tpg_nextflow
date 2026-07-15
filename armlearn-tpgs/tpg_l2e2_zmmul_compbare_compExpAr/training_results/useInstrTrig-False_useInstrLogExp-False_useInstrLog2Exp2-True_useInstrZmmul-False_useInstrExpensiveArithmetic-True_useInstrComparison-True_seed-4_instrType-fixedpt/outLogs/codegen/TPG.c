@@ -1,6 +1,6 @@
 /**
  * File generated with GEGELATI v2.0.0
- * On the 2026-05-28 19:44:30
+ * On the 2026-07-14 09:06:47
  * With the CodeGen::TPGGenerationEngine.
  */
 
@@ -32,16 +32,16 @@ void inferenceTPG(fixedpt *actions,
 	/* Jump table — static const lets GCC keep it in .rodata and
 	   potentially cache it in a register across iterations.       */
 	static const void * const jump_table[] = {
-		&&L_T0, &&L_T1, &&L_T2, &&L_T3, &&L_T4, &&L_T5, &&L_T6, &&L_T7, &&L_T8, &&L_T9, &&L_T10, &&L_T11, &&L_T12, &&L_T13, &&L_T14, &&L_T15, &&L_T16, &&L_T17, &&L_T18, &&L_T19, &&L_T20, &&L_T21, &&L_T22, &&L_T23, &&L_T24, &&L_A3, &&L_A4, &&L_A0, &&L_A5, &&L_A8, &&L_A7, &&L_A1, &&L_A6
+		&&L_T0, &&L_T1, &&L_T2, &&L_T3, &&L_T4, &&L_T5, &&L_T6, &&L_T7, &&L_T8, &&L_T9, &&L_T10, &&L_T11, &&L_T12, &&L_T13, &&L_T14, &&L_T15, &&L_T16, &&L_T17, &&L_T18, &&L_T19, &&L_T20, &&L_T21, &&L_T22, &&L_T23, &&L_A3, &&L_A4, &&L_A0, &&L_A5, &&L_A8, &&L_A7, &&L_A1, &&L_A6
     };
 
-	/* Initial dispatch — always start at T24 */
-	goto *jump_table[24];	/* == &&L_T24 */
+	/* Initial dispatch — always start at T23 */
+	goto *jump_table[23];	/* == &&L_T23 */
 
 	/* ---- Team nodes ----------------------------------------- */
 
 L_T0: {
-		static const int next[2] = { 26, 27 };
+		static const int next[2] = { 25, 26 };
 		fixedpt  scores[2];
 
         scores[0] = P0(in1, in2, in3, in4);
@@ -51,7 +51,7 @@ L_T0: {
 	}
 
 L_T1: {
-		static const int next[2] = { 28, 30 };
+		static const int next[2] = { 27, 29 };
 		fixedpt  scores[2];
 
         scores[0] = P2(in1, in2, in3, in4);
@@ -61,7 +61,7 @@ L_T1: {
 	}
 
 L_T2: {
-		static const int next[2] = { 31, 30 };
+		static const int next[2] = { 30, 29 };
 		fixedpt  scores[2];
 
         scores[0] = P4(in1, in2, in3, in4);
@@ -81,7 +81,7 @@ L_T3: {
 	}
 
 L_T4: {
-		static const int next[5] = { 26, 0, 27, 28, 2 };
+		static const int next[5] = { 25, 0, 26, 27, 2 };
 		fixedpt  scores[5];
 
         scores[0] = P8(in1, in2, in3, in4);
@@ -94,232 +94,223 @@ L_T4: {
 	}
 
 L_T5: {
-		static const int next[1] = { 4 };
-		fixedpt  scores[1];
-
-        scores[0] = P13(in1, in2, in3, in4);
-
-		goto *jump_table[next[bestProgram(scores, 1)]];
-	}
-
-L_T6: {
-		static const int next[2] = { 5, 4 };
+		static const int next[2] = { 4, 4 };
 		fixedpt  scores[2];
 
-        scores[0] = P14(in1, in2, in3, in4);
-        scores[1] = P15(in1, in2, in3, in4);
+        scores[0] = P13(in1, in2, in3, in4);
+        scores[1] = P14(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 2)]];
 	}
 
-L_T7: {
-		static const int next[4] = { 26, 4, 27, 2 };
+L_T6: {
+		static const int next[4] = { 25, 4, 26, 2 };
 		fixedpt  scores[4];
 
-        scores[0] = P16(in1, in2, in3, in4);
-        scores[1] = P17(in1, in2, in3, in4);
-        scores[2] = P18(in1, in2, in3, in4);
-        scores[3] = P19(in1, in2, in3, in4);
+        scores[0] = P15(in1, in2, in3, in4);
+        scores[1] = P16(in1, in2, in3, in4);
+        scores[2] = P17(in1, in2, in3, in4);
+        scores[3] = P18(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 4)]];
 	}
 
-L_T8: {
-		static const int next[5] = { 26, 30, 4, 27, 29 };
+L_T7: {
+		static const int next[5] = { 25, 29, 4, 26, 28 };
 		fixedpt  scores[5];
 
-        scores[0] = P20(in1, in2, in3, in4);
-        scores[1] = P21(in1, in2, in3, in4);
-        scores[2] = P22(in1, in2, in3, in4);
-        scores[3] = P23(in1, in2, in3, in4);
-        scores[4] = P24(in1, in2, in3, in4);
+        scores[0] = P19(in1, in2, in3, in4);
+        scores[1] = P20(in1, in2, in3, in4);
+        scores[2] = P21(in1, in2, in3, in4);
+        scores[3] = P22(in1, in2, in3, in4);
+        scores[4] = P23(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 5)]];
 	}
 
-L_T9: {
-		static const int next[3] = { 4, 2, 7 };
+L_T8: {
+		static const int next[3] = { 4, 2, 6 };
 		fixedpt  scores[3];
 
-        scores[0] = P15(in1, in2, in3, in4);
-        scores[1] = P25(in1, in2, in3, in4);
-        scores[2] = P26(in1, in2, in3, in4);
+        scores[0] = P14(in1, in2, in3, in4);
+        scores[1] = P24(in1, in2, in3, in4);
+        scores[2] = P25(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
-L_T10: {
-		static const int next[2] = { 7, 6 };
+L_T9: {
+		static const int next[2] = { 6, 5 };
 		fixedpt  scores[2];
 
-        scores[0] = P27(in1, in2, in3, in4);
-        scores[1] = P28(in1, in2, in3, in4);
+        scores[0] = P26(in1, in2, in3, in4);
+        scores[1] = P27(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 2)]];
 	}
 
-L_T11: {
-		static const int next[3] = { 4, 8, 31 };
+L_T10: {
+		static const int next[3] = { 4, 7, 30 };
 		fixedpt  scores[3];
 
-        scores[0] = P29(in1, in2, in3, in4);
-        scores[1] = P30(in1, in2, in3, in4);
-        scores[2] = P31(in1, in2, in3, in4);
+        scores[0] = P28(in1, in2, in3, in4);
+        scores[1] = P29(in1, in2, in3, in4);
+        scores[2] = P30(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
-L_T12: {
-		static const int next[2] = { 4, 10 };
+L_T11: {
+		static const int next[2] = { 4, 9 };
 		fixedpt  scores[2];
 
-        scores[0] = P15(in1, in2, in3, in4);
-        scores[1] = P32(in1, in2, in3, in4);
+        scores[0] = P14(in1, in2, in3, in4);
+        scores[1] = P31(in1, in2, in3, in4);
+
+		goto *jump_table[next[bestProgram(scores, 2)]];
+	}
+
+L_T12: {
+		static const int next[2] = { 10, 11 };
+		fixedpt  scores[2];
+
+        scores[0] = P32(in1, in2, in3, in4);
+        scores[1] = P33(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 2)]];
 	}
 
 L_T13: {
-		static const int next[2] = { 11, 12 };
+		static const int next[2] = { 30, 12 };
 		fixedpt  scores[2];
 
-        scores[0] = P33(in1, in2, in3, in4);
-        scores[1] = P34(in1, in2, in3, in4);
+        scores[0] = P34(in1, in2, in3, in4);
+        scores[1] = P35(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 2)]];
 	}
 
 L_T14: {
-		static const int next[2] = { 31, 13 };
-		fixedpt  scores[2];
+		static const int next[3] = { 30, 7, 2 };
+		fixedpt  scores[3];
 
-        scores[0] = P35(in1, in2, in3, in4);
-        scores[1] = P36(in1, in2, in3, in4);
+        scores[0] = P36(in1, in2, in3, in4);
+        scores[1] = P37(in1, in2, in3, in4);
+        scores[2] = P38(in1, in2, in3, in4);
 
-		goto *jump_table[next[bestProgram(scores, 2)]];
+		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
 L_T15: {
-		static const int next[3] = { 31, 8, 2 };
-		fixedpt  scores[3];
-
-        scores[0] = P37(in1, in2, in3, in4);
-        scores[1] = P38(in1, in2, in3, in4);
-        scores[2] = P39(in1, in2, in3, in4);
-
-		goto *jump_table[next[bestProgram(scores, 3)]];
-	}
-
-L_T16: {
-		static const int next[2] = { 9, 31 };
+		static const int next[2] = { 8, 30 };
 		fixedpt  scores[2];
 
-        scores[0] = P40(in1, in2, in3, in4);
-        scores[1] = P41(in1, in2, in3, in4);
+        scores[0] = P39(in1, in2, in3, in4);
+        scores[1] = P40(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 2)]];
 	}
 
-L_T17: {
-		static const int next[3] = { 15, 31, 16 };
+L_T16: {
+		static const int next[3] = { 14, 30, 15 };
 		fixedpt  scores[3];
 
-        scores[0] = P42(in1, in2, in3, in4);
-        scores[1] = P43(in1, in2, in3, in4);
-        scores[2] = P44(in1, in2, in3, in4);
+        scores[0] = P41(in1, in2, in3, in4);
+        scores[1] = P42(in1, in2, in3, in4);
+        scores[2] = P43(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 3)]];
 	}
 
-L_T18: {
-		static const int next[5] = { 2, 16, 15, 32, 31 };
+L_T17: {
+		static const int next[5] = { 2, 15, 14, 31, 30 };
 		fixedpt  scores[5];
 
-        scores[0] = P45(in1, in2, in3, in4);
-        scores[1] = P46(in1, in2, in3, in4);
-        scores[2] = P47(in1, in2, in3, in4);
-        scores[3] = P48(in1, in2, in3, in4);
-        scores[4] = P49(in1, in2, in3, in4);
+        scores[0] = P44(in1, in2, in3, in4);
+        scores[1] = P45(in1, in2, in3, in4);
+        scores[2] = P46(in1, in2, in3, in4);
+        scores[3] = P47(in1, in2, in3, in4);
+        scores[4] = P48(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 5)]];
 	}
 
-L_T19: {
-		static const int next[4] = { 32, 18, 15, 25 };
+L_T18: {
+		static const int next[4] = { 31, 17, 14, 24 };
 		fixedpt  scores[4];
 
-        scores[0] = P50(in1, in2, in3, in4);
-        scores[1] = P51(in1, in2, in3, in4);
-        scores[2] = P52(in1, in2, in3, in4);
-        scores[3] = P53(in1, in2, in3, in4);
+        scores[0] = P49(in1, in2, in3, in4);
+        scores[1] = P50(in1, in2, in3, in4);
+        scores[2] = P51(in1, in2, in3, in4);
+        scores[3] = P52(in1, in2, in3, in4);
+
+		goto *jump_table[next[bestProgram(scores, 4)]];
+	}
+
+L_T19: {
+		static const int next[4] = { 14, 30, 31, 3 };
+		fixedpt  scores[4];
+
+        scores[0] = P53(in1, in2, in3, in4);
+        scores[1] = P54(in1, in2, in3, in4);
+        scores[2] = P55(in1, in2, in3, in4);
+        scores[3] = P56(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 4)]];
 	}
 
 L_T20: {
-		static const int next[4] = { 15, 31, 32, 3 };
-		fixedpt  scores[4];
-
-        scores[0] = P54(in1, in2, in3, in4);
-        scores[1] = P55(in1, in2, in3, in4);
-        scores[2] = P56(in1, in2, in3, in4);
-        scores[3] = P57(in1, in2, in3, in4);
-
-		goto *jump_table[next[bestProgram(scores, 4)]];
-	}
-
-L_T21: {
-		static const int next[9] = { 16, 15, 32, 32, 3, 4, 15, 18, 17 };
+		static const int next[9] = { 15, 14, 31, 31, 3, 4, 14, 17, 16 };
 		fixedpt  scores[9];
 
-        scores[0] = P58(in1, in2, in3, in4);
-        scores[1] = P59(in1, in2, in3, in4);
-        scores[2] = P60(in1, in2, in3, in4);
-        scores[3] = P61(in1, in2, in3, in4);
-        scores[4] = P57(in1, in2, in3, in4);
-        scores[5] = P15(in1, in2, in3, in4);
-        scores[6] = P62(in1, in2, in3, in4);
-        scores[7] = P63(in1, in2, in3, in4);
-        scores[8] = P64(in1, in2, in3, in4);
+        scores[0] = P57(in1, in2, in3, in4);
+        scores[1] = P58(in1, in2, in3, in4);
+        scores[2] = P59(in1, in2, in3, in4);
+        scores[3] = P60(in1, in2, in3, in4);
+        scores[4] = P56(in1, in2, in3, in4);
+        scores[5] = P14(in1, in2, in3, in4);
+        scores[6] = P61(in1, in2, in3, in4);
+        scores[7] = P62(in1, in2, in3, in4);
+        scores[8] = P63(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 9)]];
 	}
 
-L_T22: {
-		static const int next[5] = { 15, 14, 31, 32, 4 };
+L_T21: {
+		static const int next[5] = { 14, 13, 30, 31, 4 };
 		fixedpt  scores[5];
 
-        scores[0] = P65(in1, in2, in3, in4);
-        scores[1] = P66(in1, in2, in3, in4);
-        scores[2] = P67(in1, in2, in3, in4);
-        scores[3] = P68(in1, in2, in3, in4);
-        scores[4] = P15(in1, in2, in3, in4);
+        scores[0] = P64(in1, in2, in3, in4);
+        scores[1] = P65(in1, in2, in3, in4);
+        scores[2] = P66(in1, in2, in3, in4);
+        scores[3] = P67(in1, in2, in3, in4);
+        scores[4] = P14(in1, in2, in3, in4);
+
+		goto *jump_table[next[bestProgram(scores, 5)]];
+	}
+
+L_T22: {
+		static const int next[5] = { 18, 19, 31, 31, 21 };
+		fixedpt  scores[5];
+
+        scores[0] = P68(in1, in2, in3, in4);
+        scores[1] = P69(in1, in2, in3, in4);
+        scores[2] = P70(in1, in2, in3, in4);
+        scores[3] = P71(in1, in2, in3, in4);
+        scores[4] = P72(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 5)]];
 	}
 
 L_T23: {
-		static const int next[5] = { 19, 20, 32, 32, 22 };
+		static const int next[5] = { 31, 20, 22, 30, 21 };
 		fixedpt  scores[5];
 
-        scores[0] = P69(in1, in2, in3, in4);
-        scores[1] = P70(in1, in2, in3, in4);
-        scores[2] = P71(in1, in2, in3, in4);
-        scores[3] = P72(in1, in2, in3, in4);
-        scores[4] = P73(in1, in2, in3, in4);
-
-		goto *jump_table[next[bestProgram(scores, 5)]];
-	}
-
-L_T24: {
-		static const int next[5] = { 32, 21, 23, 31, 22 };
-		fixedpt  scores[5];
-
-        scores[0] = P74(in1, in2, in3, in4);
-        scores[1] = P75(in1, in2, in3, in4);
-        scores[2] = P76(in1, in2, in3, in4);
-        scores[3] = P77(in1, in2, in3, in4);
-        scores[4] = P78(in1, in2, in3, in4);
+        scores[0] = P73(in1, in2, in3, in4);
+        scores[1] = P74(in1, in2, in3, in4);
+        scores[2] = P75(in1, in2, in3, in4);
+        scores[3] = P76(in1, in2, in3, in4);
+        scores[4] = P77(in1, in2, in3, in4);
 
 		goto *jump_table[next[bestProgram(scores, 5)]];
 	}
