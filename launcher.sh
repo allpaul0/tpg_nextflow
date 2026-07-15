@@ -7,6 +7,30 @@ mini_config=0
 slurm=false
 
 # =========================
+# Help / usage
+# =========================
+usage() {
+    cat <<'EOF'
+Usage: ./run.sh [options] [-- extra Nextflow args]
+
+Options:
+  --target=<name>       Target pipeline to run (required in non-interactive mode).
+                        Allowed: train, prepare_inference, inference
+  --mini_config=<n>     Enable the 'mini' profile when n > 0 (default: 0).
+  --slurm=<true|false>  Run under the SLURM executor (default: false).
+  --slurm               Shorthand for --slurm=true.
+  -h, --help            Show this help message and exit.
+
+Any unrecognized arguments are passed through to Nextflow.
+
+Examples:
+  ./run.sh --target=train
+  ./run.sh --target=inference --slurm
+  ./run.sh --target=train --mini_config=1 -resume
+EOF
+}
+
+# =========================
 # Parse command line arguments
 # =========================
 while [[ $# -gt 0 ]]; do
@@ -22,6 +46,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --slurm)
             slurm=true
+            ;;
+        -h|--help)
+            usage
+            exit 0
             ;;
         *)
             # Pass unknown args through to Nextflow
