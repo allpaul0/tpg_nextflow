@@ -39,8 +39,11 @@ Configuration files are in [`configs/`](configs), pipeline scripts in [`pipeline
 
 **Launching**
 
+Get help for the launcher:
+```sh
+./launcher.sh -h
+```
 Build containers and launch the pipeline:
-
 ```sh
 ./launcher.sh
 ```
