@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 # this script does codegen of the TPG for both the instrumented, decorated at Team level TPG and the default 
 # non-instrumented + non-decorated at Team level TPG 
