@@ -207,3 +207,10 @@ screen -r session_name
 ```bash
 exit
 ```
+
+## delete all codegen folders under armlearn-tpgs
+```bash 
+ find armlearn-tpgs -type d -name 'codegen*' -prune -exec rm -rf {} +
+ ```
+
+ 
