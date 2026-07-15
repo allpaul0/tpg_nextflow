@@ -2,7 +2,11 @@
 
 This project automates the definition, training, code generation, compilation, execution of Tangled Program Graphs (TPG) using Nextflow and Apptainer containers.
 
+## Depends on 
 
+This repository needs an apptainer of x-heep for the inference phase
+https://github.com/allpaul0/x-heep-container/tree/model
+x-heep.sif is to be placed under containers/
 
 ## Features
 
