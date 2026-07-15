@@ -2,11 +2,7 @@
 
 This project automates the definition, training, code generation, compilation, execution of Tangled Program Graphs (TPG) using Nextflow and Apptainer containers.
 
-## Depends on 
 
-This repository needs an apptainer of x-heep for the inference phase
-https://github.com/allpaul0/x-heep-container/tree/model
-x-heep.sif is to be placed under containers/
 
 ## Features
 
@@ -22,6 +18,18 @@ x-heep.sif is to be placed under containers/
 - **Build Executable:** Builds the executable using appropriate params -> useless for X-HEEP RISC-V, usefull for X86 inference
 ### inference.nf
 - **Inference:** Realize inference on the Learning Environment using the simulator and the appropriate microarchitecture
+#### Inference depends on 
+
+This repository needs an apptainer of x-heep for the inference phase
+https://github.com/allpaul0/x-heep-container/tree/model
+x-heep.sif is to be placed under containers/
+
+#### Inference needs simulators 
+In addition to the x-heep.sif, simulators are needed, those are heavy and should be built manually by the user before
+launching inference. For that the x-heep/model branch is needed. Clone it inside of tpg_nextflow/.
+https://github.com/allpaul0/x-heep/tree/model
+In this repo, under x-heep/scripts/REAMDE.md you will find instructions on how to build the simulator you want to use for inference.
+This simulator is binded at inference with the apptainer x-heep.sif
 
 ## Repository structure
 
