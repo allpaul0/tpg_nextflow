@@ -95,6 +95,15 @@ UARCH_CONFIGS_RAW = {
 def microarch_has_fpu(uarch_name: str):
     return "fpu" in uarch_name.lower()
 
+def microarch_has_div(uarch_name: str):
+    if uarch_name in ("cv32e20_im1", "cv32e20_im2", "cv32e20_im3", 
+                    "cv32e20_em1", "cv32e20_em2", "cv32e20_em3",
+                    "cv32e40x_im1", "cv32e40x_im1_zba_zbb",
+                    "cv32e40x_em1", "cv32e40x_em1_zba_zbb",
+                    "cv32e40px", "cv32e40px_fpu",
+                    "cv32e40px_corev_pulp", "cv32e40px_corev_pulp_fpu"):
+        return True
+    return False
 
 # --------------------------------------------------------------
 # dtype detection from tpg folder name
@@ -108,13 +117,39 @@ def infer_dtype(folder_name):
         return "fixedpt"
     raise ValueError(f"Cannot detect dtype from folder name: {folder_name}")
 
+def infer_iset(folder_name):
+    # useInstrTrig-False_useInstrLogExp-False_useInstrExpensiveArithmetic-True_useInstrComparison-True
+    # useInstrTrig-False_useInstrLogExp-False_useInstrLog2Exp2-True_useInstrZmmul-False_useInstrExpensiveArithmetic-False_useInstrComparison-True
+    iset = ""
+    if "useInstrTrig-True" in folder_name:
+        iset += "sin,cos,tan,"
+    if "useInstrLogExp-True" in folder_name:
+        iset += "log,exp,"
+    if "useInstrLog2Exp2-True" in folder_name:
+        iset += "log2,exp2,"
+    if "useInstrZmmul-True" in folder_name:
+        iset += "zmmul,"
+    if "useInstrExpensiveArithmetic-True" in folder_name:
+        iset += "*,/,"
+    if "useInstrComparison-True" in folder_name:
+        iset += ">,"
+    iset += "+,-"
+    return iset
 
 # --------------------------------------------------------------
 # Validity rules based on dtype and uarch FPU
 # --------------------------------------------------------------
-def is_valid_combination(dtype, uarch_has_fpu):
-    if dtype in ("fixedpt", "double") and microarch_has_fpu(uarch_has_fpu):
+def is_valid_combination(dtype, iset, uarch):
+    # fpu only for float
+    if dtype in ("fixedpt", "double") and microarch_has_fpu(uarch):
         return False
+    # no soft float for float
+    if dtype == "float" and not microarch_has_fpu(uarch):
+        return False
+    # those op/func uses division, which is not supported on some uarchs
+    iset = set(iset.split(","))   # {"tan", "log", "exp", "/", "+", "-"}
+    if {"/", "tan", "log", "exp"} & iset and not microarch_has_div(uarch):
+        return False 
     return True
 
 
@@ -133,6 +168,7 @@ def generate(tpg_folder, uarch_list=None):
     outdir_overlays.mkdir(exist_ok=True, parents=True)
 
     dtype = infer_dtype(tpg_folder.name)
+    iset = infer_iset(tpg_folder.name)
 
     # Filter to requested uarchs, or use all if none specified
     target_configs = (
@@ -147,16 +183,16 @@ def generate(tpg_folder, uarch_list=None):
             raise ValueError(f"Unknown uarchs requested: {missing}")
 
 
-    for uarch, (isa_raw, abi) in configs:
+    for uarch, (isa_raw, abi) in target_configs.items():
 
-        if not is_valid_combination(dtype, uarch):
-            print(f"[SKIP] {tpg_folder.name} on {uarch} (dtype={dtype})")
+        if not is_valid_combination(dtype, iset, uarch):
+            print(f"[SKIP] {tpg_folder.name} on {uarch} (dtype={dtype}) (iset={iset})")
             continue
 
         expanded_isas = expand_isa(isa_raw)
         
         # only the non-c version for modelization v1
-        expanded_isas = [expanded_isas[0]] if len(uarch_config) != 0 else expanded_isas
+        expanded_isas = [expanded_isas[0]] if len(uarch) != 0 else expanded_isas
         print(expanded_isas)
 
         for isa in expanded_isas:
