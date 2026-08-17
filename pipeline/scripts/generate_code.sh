@@ -16,7 +16,7 @@ project_root="$2"
 # build 128MB Apptainer overlay 
 overlay_img="${tpg_folder}/overlay/overlay.img"
 if [ ! -f "$overlay_img" ]; then
-    mkdir "${tpg_folder}/overlay"
+    mkdir -p "${tpg_folder}/overlay"
     apptainer overlay create --size 128 "$overlay_img"
 else
     rm -rf "${tpg_folder}/overlay"
