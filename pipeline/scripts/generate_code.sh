@@ -8,6 +8,10 @@ set -euo pipefail
 
 tpg_folder="$1"
 project_root="$2"
+need_default="$3"    # "true" => generate outLogs/codegen
+need_teams="$4"      # "true" => generate outLogs/codegen_TeamsInstrumented
+need_dispatch="$5"   # "true" => generate outLogs/codegen_dispatchInstrumented_TeamsInstrumented
+
 
 # runs sed in-place to update the JSON value for "tpgDotPathTraining" 
 # in the trainParams.json file to point to the out_best.dot file
@@ -16,13 +20,42 @@ project_root="$2"
 # build 128MB Apptainer overlay 
 overlay_img="${tpg_folder}/overlay/overlay.img"
 if [ ! -f "$overlay_img" ]; then
-    mkdir -p "${tpg_folder}/overlay"
+    mkdir -p  "${tpg_folder}/overlay"
     apptainer overlay create --size 128 "$overlay_img"
 else
     rm -rf "${tpg_folder}/overlay"
     mkdir "${tpg_folder}/overlay"
     apptainer overlay create --size 128 "$overlay_img"
 fi
+
+
+# --- assemble only the missing codegen steps --------------------------------
+# CodeGen always writes to /outLogs/codegen. The instrumented variants are then
+# moved to their final names; TeamsDefault is left as /outLogs/codegen and so
+# must run LAST.
+codegen_cmds=""
+
+if [ "$need_teams" = "true" ]; then
+    codegen_cmds="${codegen_cmds} \
+        && cp /armlearn-wrapper/params/TeamsInstrumented/codegenParams.json /params/codegenParams.json \
+        && ./armlearn-wrapper/build/CodeGen \
+        && mv /outLogs/codegen /outLogs/codegen_TeamsInstrumented"
+fi
+
+if [ "$need_dispatch" = "true" ]; then
+    codegen_cmds="${codegen_cmds} \
+        && cp /armlearn-wrapper/params/DispatchInstrumented_TeamsInstrumented/codegenParams.json /params/codegenParams.json \
+        && ./armlearn-wrapper/build/CodeGen \
+        && mv /outLogs/codegen /outLogs/codegen_DispatchInstrumented_TeamsInstrumented"
+fi
+
+if [ "$need_default" = "true" ]; then
+    codegen_cmds="${codegen_cmds} \
+        && cp /armlearn-wrapper/params/TeamsDefault/codegenParams.json /params/codegenParams.json \
+        && ./armlearn-wrapper/build/CodeGen"
+fi
+
+
 # run the code generation inside the Singularity container
 apptainer exec \
     --overlay "${tpg_folder}/overlay/overlay.img" \
@@ -39,11 +72,7 @@ apptainer exec \
         && cmake .. \
         && make CodeGen \
         && cd ../.. \
-        && cp /armlearn-wrapper/params/TeamsInstrumented/codegenParams.json /params/codegenParams.json \
-        && ./armlearn-wrapper/build/CodeGen \
-        && mv /outLogs/codegen /outLogs/codegen_TeamsInstrumented \
-        && cp /armlearn-wrapper/params/TeamsDefault/codegenParams.json /params/codegenParams.json \
-        && ./armlearn-wrapper/build/CodeGen \
+        ${codegen_cmds} \
         && rm /params/codegenParams.json \
         && rm /params/AllTarget.csv /params/ValidationTrajectories.txt"
 

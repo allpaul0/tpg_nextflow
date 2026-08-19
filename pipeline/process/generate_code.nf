@@ -5,8 +5,10 @@ process generate_code {
 
     // publishDir "${params.outdir}/codegen_results", mode: 'copy'
 
+    tag "${tpg_folder.name}"
+
     input:
-    path tpg_folder
+    tuple path(tpg_folder), val(need_default), val(need_teams), val(need_dispatch)
 
     output:
     path tpg_folder
@@ -17,6 +19,6 @@ process generate_code {
     
     echo "Generating code for TPG model in ${tpg_folder}"
     bash ${params.projectRoot}/pipeline/scripts/generate_code.sh \
-        \$tpg_folder ${params.projectRoot}
+        \$tpg_folder ${params.projectRoot} ${need_default} ${need_teams} ${need_dispatch}
     """
 }

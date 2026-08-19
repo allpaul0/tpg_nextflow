@@ -16,12 +16,23 @@ workflow {
 
     def mini = params.mini_config.toInteger()
 
-    def ch_trained_TPGs = Channel.fromPath(params.trained_TPGs_path, type: 'dir').filter{ dir ->!dir.resolve("outLogs/codegen").exists()}
+    // For each training dir, detect which of the three codegen outputs are missing,
+    // and carry that per-item alongside the directory.
+    def ch_trained_TPGs = Channel.fromPath(params.trained_TPGs_path, type: 'dir')
+        .map { dir ->
+            def need_default  = !dir.resolve("outLogs/codegen").exists()
+            def need_teams    = !dir.resolve("outLogs/codegen_TeamsInstrumented").exists()
+            def need_dispatch = !dir.resolve("outLogs/codegen_DispatchInstrumented_TeamsInstrumented").exists()
+            tuple(dir, need_default, need_teams, need_dispatch)
+        }
+        // keep only dirs that still need at least one codegen variant
+        .filter { dir, need_default, need_teams, need_dispatch ->
+            need_default || need_teams || need_dispatch
+        }
 
     if (mini > 0) 
     {
-        // echo hello
-        println "hello"
+        println "mini-config taken"
         ch_trained_TPGs = ch_trained_TPGs.take(mini)
     }
 
@@ -32,7 +43,12 @@ workflow {
 
     generated_codes = generate_code(ch_trained_TPGs)
 
-    exported_LE_states = export_LE_states(generated_codes)
+    // skip LE-state export where the precalcul output already exists
+    ch_to_export = generated_codes.filter { tpg_folder ->
+        !tpg_folder.resolve("outLogs/precalcul").exists()
+    }
+
+    exported_LE_states = export_LE_states(ch_to_export)
     
     // unused for now, we build on X-HEEP using the RISCV compiler toolchain
     // can be set to compile for x86 using the right compiler
