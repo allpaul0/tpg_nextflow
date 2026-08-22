@@ -1,10 +1,10 @@
 process inference_simulator {
     cpus 1
-    memory '512 MB' 
+    memory '512 MB'
     time '2h'
 
     input:
-    tuple path(tpg_folder), path(expe_json)
+    tuple path(tpg_folder), path(expe_json), val(apps)
 
     // output: literal folder path relative to the JSON
     output:
@@ -17,7 +17,9 @@ process inference_simulator {
 
     echo "Running inference simulation with config \$expe_json"
     echo "TPG folder: \$tpg_folder"
-    bash ${params.projectRoot}/pipeline/scripts/simulation.sh \$expe_json \$tpg_folder ${params.projectRoot}
+    echo "Apps to run: ${apps}"
+    bash ${params.projectRoot}/pipeline/scripts/simulation.sh \
+        \$expe_json \$tpg_folder ${params.projectRoot} ${apps}
     """
 }
 

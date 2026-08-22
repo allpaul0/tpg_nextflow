@@ -2,17 +2,25 @@
 
 nextflow.enable.dsl=2
 
-include { inference_simulator } from "./process/inference_simulator.nf"
-include { generate_TPG_ISA_UARCH_configs } from "./process/generate_TPG_ISA_UARCH_configs.nf"
-include { find_missing_inference_results_nf } from "./process/find_missing_inference_results_nf.nf"
+include { inference_simulator }             from "./process/inference_simulator.nf"
+include { generate_TPG_ISA_UARCH_configs }  from "./process/generate_TPG_ISA_UARCH_configs.nf"
+include { detect_inference_work }           from "./process/detect_inference_work.nf"
 
-// This pipeline realizes the inference phase by entering the x-heep container, generating a simulator 
+// This pipeline realizes the inference phase by entering the x-heep container, generating a simulator
 // and simulating the TPG with the required ISA on the Inference Benchmark.
-
-// For each TPG: 
-//     For each ISA and microarchitecture combination: 
-//         Run the inference benchmark on the simulator.
-//         Inference latencies are collected, parsed and stored in a CSV file.
+//
+// For each TPG:
+//     For each ISA/microarchitecture config:
+//         Detect which apps (default / teams / dispatch) are still missing, and run only those.
+//         as inference benchmark on the simulator 
+//         Inference latencies are collected, parsed and stored in a CSV file and fused
+//         into latencies.json 
+//
+// Advancement detection:
+//   Step 1 (config generation): generate_TPG_ISA_UARCH_configs skips a TPG whose configs already
+//                               exist (unless --force). This is the "was step 1 done?" check.
+//   Step 2 (per-app simulation): detect_inference_work inspects results/<tag>/latencies.json keys
+//                               and disassembly files, and emits only the apps still to run.
 
 workflow {
 
@@ -30,7 +38,7 @@ workflow {
     def containerPath = "${params.projectRoot}/containers/x-heep.sif"
 
     if (!file(containerPath).exists()) {
-         error """
+        error """
         ERROR: The required container ${containerPath} does not exist.
 
         The inference_simulator process requires this container to run.
@@ -38,67 +46,48 @@ workflow {
         """
     }
 
+    // Channel of prepared TPG folders
+    def ch_prepared_TPGs = Channel.fromPath(params.prepared_TPGs_path, type: 'dir')
+
+    // ---- Step 1: ensure configs exist (skips internally if already complete) ----
+    // When resuming we assume configs already exist and skip generation entirely.
+    def ch_ready
     if( !params.inference_resume ) {
-
-        // Channel of prepared TPG folders
-        def ch_prepared_TPGs = Channel.fromPath(params.prepared_TPGs_path, type: 'dir')
-
-        // Generate JSON configs using Python
+         // Generate JSON configs using Python
         // JSON config is a mapping: TPG, uarch, isa, abi, dtype, compiler
         // uarch list defines which subgroup to generate configs for e.g. "cv32e40px", "cv32e40px_fpu"
-        def ch_configs = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs, params.uarch_list)
-
-        def takeFirstOnly = false  // or false
-
-        // For each TPG, flatten JSON config files
-        // we pair TPG with their JSON config files 
-        ch_TPG_JSONs = ch_configs
-            .flatMap { tpg_folder ->
-                def config = file("${tpg_folder}/inference/configs")
-                def jsonFiles = config.listFiles()
-                                    .findAll { it.name.endsWith(".json") }
-
-                if (takeFirstOnly && jsonFiles) {
-                    jsonFiles = [ jsonFiles[0] ]
-                }
-
-                jsonFiles.collect { jsonFile -> tuple(tpg_folder, jsonFile) }
-        }
-
+        ch_ready = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs, params.uarch_list)
     } else {
-
-        //print hello
-        println "Resuming inference phase by finding missing inference results..."
-    
-        // Read missing.txt and convert lines to Files
-        def ch_tpg_expe = Channel.fromPath(params.tpg_expe, type: 'dir')
-
-        missing_files_ch = find_missing_inference_results_nf(ch_tpg_expe)
-        
-        ch_TPG_JSONs = missing_files_ch
-            .splitText()
-            .map { line ->
-                // ensure whitespace trimmed and skip empty lines
-                line = line?.trim()
-                if (!line) return null
-                def cfg = file(line)
-                def tpg_folder = cfg.parent.parent.parent
-                tuple(tpg_folder, cfg)
-            }
-            .filter { it != null }     // remove any nulls produced by blank lines
+        println "Resuming: skipping config generation, detecting missing work only..."
+        ch_ready = ch_prepared_TPGs
     }
 
-    def mini = params.mini_config.toInteger()
+    // ---- Step 2: detect, per TPG, which (config, apps) still need running ----
+    def ch_todo = detect_inference_work(ch_ready, params.uarch_list)
 
+    // Parse the TSV work list into (tpg_folder, config_json, apps_csv) tuples.
+    // Each line: <absolute_config_path>\t<comma_separated_apps>
+    def ch_TPG_JSONs = ch_todo
+        .splitText()
+        .map { it?.trim() }
+        .filter { it }                              // drop blank lines
+        .map { line ->
+            def parts = line.split('\t')
+            def cfg   = file(parts[0])
+            def apps  = (parts.size() > 1 && parts[1]) ? parts[1] : 'default,teams,dispatch'
+            def tpg_folder = cfg.parent.parent.parent   // configs -> inference -> tpg_folder
+            tuple(tpg_folder, cfg, apps)
+        }
+
+    def mini = params.mini_config.toInteger()
     if (mini > 0) {
         ch_TPG_JSONs = ch_TPG_JSONs.take(mini)
     }
 
-    // display the JSONs found
-    //ch_TPG_JSONs.view { t -> "Found TPG JSON config: ${t[1]} in folder ${t[0]}" }
-    // count the number of JSON configs to process
-    //ch_TPG_JSONs.count().view { c -> "Total number of TPG JSON configs to process: ${c}" }
+    // Debug helpers (uncomment as needed):
+    ch_TPG_JSONs.view { t -> "TODO: ${t[1].name} -> apps=[${t[2]}] (tpg ${t[0].name})" }
+    ch_TPG_JSONs.count().view { c -> "Total (config, apps) work items: ${c}" }
 
-    // Run inference simulator for each JSON config
+    // Run inference simulator for the missing apps of each config
     inference_simulator(ch_TPG_JSONs)
 }

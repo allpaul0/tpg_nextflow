@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import shutil
 import json
 from pathlib import Path
 
@@ -90,7 +89,7 @@ UARCH_CONFIGS_RAW = {
 
 
 # --------------------------------------------------------------
-# FPU RULE: derived from microarchitecture name
+# FPU / DIV RULES: derived from microarchitecture name
 # --------------------------------------------------------------
 def microarch_has_fpu(uarch_name: str):
     return "fpu" in uarch_name.lower()
@@ -106,7 +105,7 @@ def microarch_has_div(uarch_name: str):
     return False
 
 # --------------------------------------------------------------
-# dtype detection from tpg folder name
+# dtype / iset detection from tpg folder name
 # --------------------------------------------------------------
 def infer_dtype(folder_name):
     if "instrType-float" in folder_name:
@@ -154,46 +153,40 @@ def is_valid_combination(dtype, iset, uarch):
 
 
 # --------------------------------------------------------------
-# Main generator
+# Expected configs (single source of truth for both writing and
+# step-1 completeness detection)
 # --------------------------------------------------------------
-def generate(tpg_folder, uarch_list=None):
+def expected_configs(tpg_folder, uarch_list=None, verbose=False):
+    """
+    Return a list of (config_dict, filepath) for every valid (uarch, isa) combo.
+    Pure: computes paths, does not create or write anything.
+    """
     tpg_folder = Path(tpg_folder)
     outdir = tpg_folder / "inference" / "configs"
-    outdir.mkdir(exist_ok=True, parents=True)
-    outdir_results = tpg_folder / "inference" / "results"
-    outdir_results.mkdir(exist_ok=True, parents=True)
-    outdir_overlays = tpg_folder / "inference" / "overlays"
-    outdir_overlays.mkdir(exist_ok=True, parents=True)
-    outdir_overlays = tpg_folder / "inference" / "tpg_inference_expe"
-    outdir_overlays.mkdir(exist_ok=True, parents=True)
 
     dtype = infer_dtype(tpg_folder.name)
     iset = infer_iset(tpg_folder.name)
 
-    # Filter to requested uarchs, or use all if none specified
     target_configs = (
         {k: v for k, v in UARCH_CONFIGS_RAW.items() if k in uarch_list}
         if uarch_list
         else UARCH_CONFIGS_RAW
     )
-
     if uarch_list:
         missing = set(uarch_list) - set(UARCH_CONFIGS_RAW.keys())
         if missing:
             raise ValueError(f"Unknown uarchs requested: {missing}")
 
-
+    results = []
     for uarch, (isa_raw, abi) in target_configs.items():
-
         if not is_valid_combination(dtype, iset, uarch):
-            print(f"[SKIP] {tpg_folder.name} on {uarch} (dtype={dtype}) (iset={iset})")
+            if verbose:
+                print(f"[SKIP] {tpg_folder.name} on {uarch} (dtype={dtype}) (iset={iset})")
             continue
 
         expanded_isas = expand_isa(isa_raw)
-        
-        # only the non-c version for modelization v1
+        # only the non-c version for modelization v1 (preserved from original)
         expanded_isas = [expanded_isas[0]] if len(uarch) != 0 else expanded_isas
-        print(expanded_isas)
 
         for isa in expanded_isas:
 
@@ -202,9 +195,6 @@ def generate(tpg_folder, uarch_list=None):
             isa = replace_xpulp_extensions(isa) # replaces xpulp
 
             filename = f"{uarch}_{isa}_{abi}_{dtype}.json"
-            filepath = outdir / filename
-
-            # JSON content
             config = {
                 "tpg": tpg_folder.name,
                 "uarch": uarch,
@@ -213,11 +203,32 @@ def generate(tpg_folder, uarch_list=None):
                 "dtype": dtype,
                 "compiler": compiler
             }
+            results.append((config, outdir / filename))
+    return results
 
-            with open(filepath, "w") as f:
-                json.dump(config, f, indent=4)
 
-            print(f"[OK] Created {filename}")
+# --------------------------------------------------------------
+# Main generator (idempotent, skips if already complete)
+# --------------------------------------------------------------
+def generate(tpg_folder, uarch_list=None, force=False):
+    tpg_folder = Path(tpg_folder)
+
+    # create the inference subtree
+    for sub in ("configs", "results", "overlays", "tpg_inference_expe"):
+        (tpg_folder / "inference" / sub).mkdir(exist_ok=True, parents=True)
+
+    configs = expected_configs(tpg_folder, uarch_list, verbose=True)
+
+    # Step-1 detection: if every expected config already exists, skip.
+    if not force and configs and all(p.exists() for _, p in configs):
+        print(f"[SKIP-ALL] {tpg_folder.name}: {len(configs)} config(s) already present")
+        return
+
+    for config, filepath in configs:
+        with open(filepath, "w") as f:
+            json.dump(config, f, indent=4)
+        print(f"[OK] Created {filepath.name}")
+
 
 # --------------------------------------------------------------
 # CLI
@@ -232,5 +243,10 @@ if __name__ == "__main__":
         default=None,
         help="List of target uarchs to generate configs for. If not provided, all uarchs are used."
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Regenerate configs even if all expected files already exist."
+    )
     args = parser.parse_args()
-    generate(args.tpg_folder, args.uarch_list)
+    generate(args.tpg_folder, args.uarch_list, force=args.force)
