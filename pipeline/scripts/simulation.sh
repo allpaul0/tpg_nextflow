@@ -130,6 +130,11 @@ CMD+="${copy_cmds}"
 CMD+=" && cd /x-heep"
 CMD+=" && mkdir -p experimentations/simulations"
 CMD+="${seed_cmd}"
+# Generate the MCU for this microarchitecture. Runs ONCE per invocation, not per
+# app: a single call to this script always targets one uarch (it comes from the
+# config JSON), and all requested apps are simulated on that same MCU.
+# Must come before any simulation.sh call.
+CMD+=" && ./scripts/generate-mcu/generate-mcu.sh ${uarch}"
 CMD+="${run_cmds}"
 
 apptainer exec \
