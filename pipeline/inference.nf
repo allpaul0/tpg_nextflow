@@ -53,7 +53,7 @@ workflow {
     // When resuming we assume configs already exist and skip generation entirely.
     def ch_ready
     if( !params.inference_resume ) {
-         // Generate JSON configs using Python
+        // Generate JSON configs using Python
         // JSON config is a mapping: TPG, uarch, isa, abi, dtype, compiler
         // uarch list defines which subgroup to generate configs for e.g. "cv32e40px", "cv32e40px_fpu"
         ch_ready = generate_TPG_ISA_UARCH_configs(ch_prepared_TPGs, params.uarch_list)
@@ -81,7 +81,15 @@ workflow {
 
     def mini = params.mini_config.toInteger()
     if (mini > 0) {
+        println "mini_config=${mini}: limiting to ${mini} work item(s), running serially"
         ch_TPG_JSONs = ch_TPG_JSONs.take(mini)
+        
+        //ch_TPG_JSONs = ch_TPG_JSONs.filter { tpg, cfg, apps ->
+        //tpg.name.contains('useInstrTrig-False_useInstrLogExp-False_useInstrLog2Exp2-True_useInstrZmmul-False_useInstrExpensiveArithmetic-False_useInstrComparison-True_seed-4_instrType-fixedpt') &&
+        //cfg.name.startsWith('cv32e40x_im1_zba_zbb') && 
+        //apps.contains('dispatch')}
+    } else {
+        println "mini_config=0: running all work items"
     }
 
     // Debug helpers (uncomment as needed):
