@@ -31,11 +31,29 @@ case "$INSTR_TYPE" in
         export CXXFLAGS="-DUSE_FLOAT"
         export CFLAGS="-DUSE_FLOAT"
         ;;
+    float_iset32)
+        INSTR_TYPE="float"
+        export CXXFLAGS="-DUSE_FLOAT"
+        export CFLAGS="-DUSE_FLOAT"
+        ;;
+    float_iset64)
+        INSTR_TYPE="float"
+        export CXXFLAGS="-DUSE_FLOAT"
+        export CFLAGS="-DUSE_FLOAT"
+        ;;
     int)
         export CXXFLAGS="-DUSE_INT"
         export CFLAGS="-DUSE_INT"
         ;;
     fixedpt)
+        export CXXFLAGS="-DUSE_FIXEDPT"
+        export CFLAGS="-DUSE_FIXEDPT"
+        ;;
+    fixedpt_iset32)
+        export CXXFLAGS="-DUSE_FIXEDPT"
+        export CFLAGS="-DUSE_FIXEDPT"
+        ;;
+    fixedpt_iset64)
         export CXXFLAGS="-DUSE_FIXEDPT"
         export CFLAGS="-DUSE_FIXEDPT"
         ;;
