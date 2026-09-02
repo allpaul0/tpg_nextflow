@@ -16,10 +16,15 @@ workflow {
 
     def mini = params.mini_config.toInteger()
 
+    // First filter is to make sure we have a TPG folder 
     // For each training dir, detect which of the three codegen outputs are missing,
     // and carry that per-item alongside the directory.
-    def ch_trained_TPGs = Channel.fromPath(params.trained_TPGs_path, type: 'dir')
-        .map { dir ->
+    def ch_trained_TPGs = Channel.fromPath(params.trained_TPGs_path, type: 'dir', checkIfExists: true)
+    .filter { dir ->
+        def ok = dir.resolve("params/trainParams.json").exists() && dir.resolve("outLogs").exists()
+        if( !ok ) log.warn "Skipping non-TPG dir: ${dir}"
+        ok
+    }.map { dir ->
             def need_default  = !dir.resolve("outLogs/codegen").exists()
             def need_teams    = !dir.resolve("outLogs/codegen_TeamsInstrumented").exists()
             def need_dispatch = !dir.resolve("outLogs/codegen_DispatchInstrumented_TeamsInstrumented").exists()
