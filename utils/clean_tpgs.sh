@@ -3,8 +3,11 @@
 # clean_tpgs.sh — remove codegen / inference artifacts from armlearn-tpgs runs
 #
 # Layout assumed:
-#   <BASE_DIR>/<tpg_folder>/training_results/<run_X>/outLogs/{codegen,codegen_TeamsInstrumented,precalcul}
+#   <BASE_DIR>/<tpg_folder>/training_results/<run_X>/outLogs/{codegen,codegen_TeamsInstrumented,codegen_DispatchInstrumented_TeamsInstrumented,precalcul}
 #   <BASE_DIR>/<tpg_folder>/training_results/<run_X>/inference/{configs,results}/*
+#
+# Codegen deletion can target all variants at once, or only the ones selected
+# with -C (see usage).
 #
 # Always prints a dry run first, then asks for confirmation (unless -y).
 
@@ -22,21 +25,33 @@ TPG_FOLDERS=(
     # "tpg_float_iset32/tpg_float_iset32_logexp"
     # "tpg_float_iset32/tpg_float_iset32_logexp_trig"  
     # "tpg_float_iset32/tpg_float_iset32_trig"
-    "tpg_l2e2_zmmul_compbare_compExpAr"
+    # "tpg_l2e2_zmmul_compbare_compExpAr"
+    "tpg_fixedpt_iset32/tpg_fixedpt_iset32_compExpAr_logexp_trigo_complete"
 )
 
 # What to delete
 DELETE_CODEGEN=true
-DELETE_INFERENCE=true
+DELETE_INFERENCE=false
+
+# Which codegen directories to delete: "all", or a comma separated list of
+# names/aliases (see usage for the accepted values). Overridden by -C.
+CODEGEN_SELECTION="all"
 
 # ----------------------------------------------------------------------------
 # Internals
 # ----------------------------------------------------------------------------
 
-# Directories removed entirely, under <run>/outLogs/
-CODEGEN_TARGETS=(codegen codegen_TeamsInstrumented codegen_DispatchInstrumented_TeamsInstrumented precalcul)
+# Every directory (removed entirely) that lives under <run>/outLogs/
+ALL_CODEGEN_TARGETS=(
+    codegen
+    codegen_TeamsInstrumented
+    codegen_DispatchInstrumented_TeamsInstrumented
+    precalcul
+)
 # Directories emptied (kept, contents removed), under <run>/inference/
 INFERENCE_TARGETS=(configs results)
+
+CODEGEN_TARGETS=()
 
 ASSUME_YES=false
 SHOW_SIZES=false
@@ -50,20 +65,77 @@ Options:
   -c       delete codegen artifacts only
   -i       delete inference artifacts only
   -a       delete both (default)
+  -C LIST  which codegen dirs to delete (default: ${CODEGEN_SELECTION})
+           comma separated, from:
+             all             every entry below
+             codegen         codegen                (aliases: plain, base)
+             teams           codegen_TeamsInstrumented                       (ti)
+             dispatch        codegen_DispatchInstrumented_TeamsInstrumented  (dti)
+             instrumented    both instrumented dirs above
+             precalcul       precalcul              (alias: pre)
+           full directory names are accepted too
   -s       show size of each entry in the dry run (slower)
   -y       skip confirmation prompt
   -h       this help
 
 Any tpg folders given as arguments override the TPG_FOLDERS list in the script.
+
+Examples:
+  ${0##*/} -c -C dispatch            # only codegen_DispatchInstrumented_TeamsInstrumented
+  ${0##*/} -c -C teams,dispatch      # both instrumented codegen dirs
+  ${0##*/} -c -C all                 # every codegen dir (incl. precalcul)
 EOF
 }
 
-while getopts ":b:ciasyh" opt; do
+# add one codegen target, ignoring duplicates
+add_codegen_target() {
+    local wanted="$1" existing
+    for existing in ${CODEGEN_TARGETS[@]+"${CODEGEN_TARGETS[@]}"}; do
+        [[ $existing == "$wanted" ]] && return 0
+    done
+    CODEGEN_TARGETS+=("$wanted")
+}
+
+# expand CODEGEN_SELECTION into CODEGEN_TARGETS
+resolve_codegen_selection() {
+    local spec="$1" item
+    CODEGEN_TARGETS=()
+    for item in ${spec//,/ }; do
+        case "${item,,}" in
+            all)
+                local t
+                for t in "${ALL_CODEGEN_TARGETS[@]}"; do add_codegen_target "$t"; done
+                ;;
+            codegen|plain|base)
+                add_codegen_target codegen ;;
+            teams|ti|codegen_teamsinstrumented)
+                add_codegen_target codegen_TeamsInstrumented ;;
+            dispatch|dti|codegen_dispatchinstrumented_teamsinstrumented)
+                add_codegen_target codegen_DispatchInstrumented_TeamsInstrumented ;;
+            instrumented|instr)
+                add_codegen_target codegen_TeamsInstrumented
+                add_codegen_target codegen_DispatchInstrumented_TeamsInstrumented ;;
+            pre|precalcul)
+                add_codegen_target precalcul ;;
+            *)
+                echo "ERROR: unknown codegen selection: '$item'" >&2
+                echo "       accepted: all, codegen, teams, dispatch, instrumented, precalcul" >&2
+                exit 2 ;;
+        esac
+    done
+    if ((${#CODEGEN_TARGETS[@]} == 0)); then
+        echo "ERROR: empty codegen selection." >&2
+        exit 2
+    fi
+}
+
+while getopts ":b:C:ciasyh" opt; do
     case "$opt" in
         b) BASE_DIR="$OPTARG" ;;
         c) DELETE_CODEGEN=true;  DELETE_INFERENCE=false ;;
         i) DELETE_CODEGEN=false; DELETE_INFERENCE=true  ;;
         a) DELETE_CODEGEN=true;  DELETE_INFERENCE=true  ;;
+        C) CODEGEN_SELECTION="$OPTARG" ;;
         s) SHOW_SIZES=true ;;
         y) ASSUME_YES=true ;;
         h) usage; exit 0 ;;
@@ -76,6 +148,8 @@ shift $((OPTIND - 1))
 (($# > 0)) && TPG_FOLDERS=("$@")
 
 BASE_DIR="${BASE_DIR%/}"
+
+resolve_codegen_selection "$CODEGEN_SELECTION"
 
 if [[ ! -d $BASE_DIR ]]; then
     echo "ERROR: base folder not found: $BASE_DIR" >&2
@@ -147,6 +221,7 @@ echo "=============================================================="
 echo " base folder : $BASE_DIR"
 echo " tpg folders : ${TPG_FOLDERS[*]}"
 echo " selection   : ${selection% }"
+$DELETE_CODEGEN && echo " codegen dirs: ${CODEGEN_TARGETS[*]}"
 echo " runs found  : $n_runs"
 echo "--------------------------------------------------------------"
 
