@@ -8,6 +8,11 @@ include { build_executables } from "./process/build_executables.nf"
 
 // This pipeline prepares the inference phase by generating code, exporting LE states and building executables
 
+// A TPG dir is a training-result dir: it holds the training params and the outLogs tree.
+def isTpgDir( d ) {
+    d.resolve("params/trainParams.json").exists() && d.resolve("outLogs").exists()
+}
+
 workflow {
 
     if( !params.projectRoot ) {
@@ -16,15 +21,36 @@ workflow {
 
     def mini = params.mini_config.toInteger()
 
-    // First filter is to make sure we have a TPG folder 
-    // For each training dir, detect which of the three codegen outputs are missing,
+    // Flags filled in while the channel is built, so an empty channel can be
+    // reported with the reason that actually caused it.
+    def stats = [ tpg: 0, already_generated: 0 ]
+
+    // params.trained_TPGs_path may match either TPG dirs directly, or container dirs
+    // holding TPG dirs (e.g. '.../training_results/*' vs '.../training_results').
+    // Detecting which case we are in matters: the outLogs/codegen probes below must be
+    // resolved against the TPG dir, never against its parent.
+    // Normalize both layouts to a flat channel of TPG dirs.
+    def ch_tpg_dirs = Channel.fromPath(params.trained_TPGs_path, type: 'dir', checkIfExists: true)
+        .flatMap { dir ->
+            if( isTpgDir(dir) ) {
+                log.debug "TPG dir: ${dir}"
+                return [ dir ]
+            }
+            // not a TPG dir: look one level down for TPG dirs
+            def children = dir.listFiles().findAll { it.isDirectory() && isTpgDir(it) }
+            if( children ) {
+                log.info "Container dir: ${dir} -> ${children.size()} TPG dir(s)"
+                return children
+            }
+            log.warn "Skipping dir (neither a TPG dir nor a container of TPG dirs): ${dir}"
+            return []
+        }
+
+    // For each TPG dir, detect which of the three codegen outputs are missing,
     // and carry that per-item alongside the directory.
-    def ch_trained_TPGs = Channel.fromPath(params.trained_TPGs_path, type: 'dir', checkIfExists: true)
-    .filter { dir ->
-        def ok = dir.resolve("params/trainParams.json").exists() && dir.resolve("outLogs").exists()
-        if( !ok ) log.warn "Skipping non-TPG dir: ${dir}"
-        ok
-    }.map { dir ->
+    def ch_trained_TPGs = ch_tpg_dirs
+        .map { dir ->
+            stats.tpg = stats.tpg + 1
             def need_default  = !dir.resolve("outLogs/codegen").exists()
             def need_teams    = !dir.resolve("outLogs/codegen_TeamsInstrumented").exists()
             def need_dispatch = !dir.resolve("outLogs/codegen_DispatchInstrumented_TeamsInstrumented").exists()
@@ -32,7 +58,9 @@ workflow {
         }
         // keep only dirs that still need at least one codegen variant
         .filter { dir, need_default, need_teams, need_dispatch ->
-            need_default || need_teams || need_dispatch
+            def todo = need_default || need_teams || need_dispatch
+            if( !todo ) stats.already_generated = stats.already_generated + 1
+            todo
         }
 
     if (mini > 0) 
@@ -41,8 +69,13 @@ workflow {
         ch_trained_TPGs = ch_trained_TPGs.take(mini)
     }
 
-    // safety check to ensure we have some training directories to work with after filtering and taking the mini_config
+    // safety check to ensure we have some training directories to work with after
+    // filtering and taking the mini_config -- report which of the two causes it was
     ch_trained_TPGs.ifEmpty {
+        if( stats.tpg == 0 )
+            error "No TPG directory found under trained_TPGs_path. Check the paths in the config."
+        if( stats.already_generated == stats.tpg )
+            error "Nothing to generate: all ${stats.tpg} TPG dir(s) already have the three codegen folders (codegen, codegen_TeamsInstrumented, codegen_DispatchInstrumented_TeamsInstrumented). Remove them with utils/clean_tpgs.sh to regenerate."
         error "No training directories found after filtering/take(). Check mini_config and paths."
     }
 
